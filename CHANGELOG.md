@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Created dedicated modules for better separation of concerns:
+  - `activity_tracker.py` - Global activity state management
+  - `thread_manager.py` - Thread lifecycle management
+  - `input_listeners.py` - Input event listeners
+  - `event_buffer.py` - Thread-safe event buffering
+  - `window_monitor.py` - Active window monitoring
+  - `raw_data_logger.py` - Raw data CSV logging
+  - `activity_aggregator.py` - Activity data aggregation
+
+### Changed
+- Significantly improved code readability and maintainability following Python best practices
+- Refactored `data_collector.py` to serve as a high-level API coordinator
+- Split monolithic modules into focused, single-responsibility components
+- Enhanced modular architecture with clear separation between data collection, state management, and UI
+- Improved error handling and defensive programming throughout
+- Applied consistent naming conventions and documentation standards
+
+### Fixed
+- Eliminated code duplication through proper abstraction
+- Reduced cyclic dependencies between modules
+- Improved thread safety in event collection systems
+
 ## [0.2.0] - 2025-08-01
 
 ### Added

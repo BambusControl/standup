@@ -1,6 +1,12 @@
+"""
+Entry point for running the standup module as a script.
+
+This module allows the standup package to be executed directly with:
+    python -m standup
+"""
+
 from standup.cli import cli
 
 
-# Here to run this as a module
 if __name__ == "__main__":
     cli()

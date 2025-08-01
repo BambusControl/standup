@@ -1,28 +1,47 @@
 # Standup: Activity Monitor
 
-A simple Python-based activity monitor for Windows. This script tracks keyboard and mouse input to distinguish between active work sessions and breaks. It provides desktop notifications to remind you to take breaks after a configurable period of continuous work and logs all activity to a CSV file for later review.
+A Python-based activity monitor for Windows that tracks keyboard and mouse input to distinguish between active work sessions and breaks. Features desktop notifications to remind you to take breaks after configurable periods of continuous work and comprehensive activity logging for detailed analysis.
 
 ## Features
 
-*   Monitors keyboard and mouse activity.
-*   Sends Windows toast notifications to remind you to take a break.
-*   Logs work and break sessions to `activity_log.csv`.
-*   Configurable work and break time durations.
-*   **Detailed raw activity logging to `raw_activity.csv` (or `raw_activity_test.csv` in test mode) for data science experiments.**
-    *   Includes mouse movements, clicks, scrolls, key presses.
-    *   **Per-second summary of activity counts.**
-    *   **Active window title logging to understand context (e.g., application in use).**
-*   **Command-Line Interface (CLI) using `click` for easy control.**
-*   **Test mode (`--test`) for controlled execution and data generation.**
+*   **Smart Activity Monitoring**: Tracks keyboard and mouse activity with intelligent state management
+*   **Break Reminders**: Windows toast notifications to remind you to take breaks
+*   **Comprehensive Logging**:
+    *   Work and break sessions logged to `activity_log.csv`
+    *   Detailed raw activity data to `*_raw.csv` files for data science analysis
+    *   Per-second activity summaries including mouse movements, clicks, scrolls, and key presses
+    *   Active window title tracking for context analysis
+*   **Configurable Durations**: Customizable work and break time thresholds
+*   **Command-Line Interface**: Easy control using `click` framework
+*   **Test Mode**: Controlled execution for testing and data generation (`--test` flag)
+*   **Modular Architecture**: Clean, maintainable codebase with separation of concerns
 
-## Technology
+## Architecture
 
-*   Python
-*   `pynput` for input monitoring.
-*   `windows-toasts` for notifications.
-*   `click` for command-line interface.
-*   `pygetwindow` for active window monitoring.
-*   `ruff` for code linting and formatting.
+The application follows a modular design with clear separation of responsibilities:
+
+- **`app.py`** - Main application orchestration and coordination
+- **`activity_tracker.py`** - Global activity state management
+- **`state_handlers.py`** - State machine logic for IDLE/ACTIVE transitions
+- **`data_collector.py`** - High-level API for raw data collection
+- **`event_buffer.py`** - Thread-safe event buffering system
+- **`input_listeners.py`** - Mouse and keyboard event listeners
+- **`window_monitor.py`** - Active window polling and title extraction
+- **`raw_data_logger.py`** - CSV logging for raw activity data
+- **`activity_aggregator.py`** - Event aggregation and summarization
+- **`thread_manager.py`** - Thread lifecycle management
+- **`utils.py`** - Notifications, formatting, and utility functions
+- **`models.py`** - Data structures and type definitions
+- **`cli.py`** - Command-line interface
+
+## Technology Stack
+
+*   **Python 3.12+** - Core language
+*   **`pynput`** - Input monitoring
+*   **`windows-toasts`** - Desktop notifications
+*   **`click`** - Command-line interface
+*   **`pygetwindow`** - Active window monitoring
+*   **`ruff`** - Code linting and formatting
 
 ## Installation
 
@@ -32,28 +51,47 @@ A simple Python-based activity monitor for Windows. This script tracks keyboard 
     cd standup
     ```
 
-2.  **Set up a virtual environment and install dependencies:**
+2.  **Set up dependencies using `uv`:**
     ```bash
     uv sync
-    uv pip install -e .
     ```
 
 ## Usage
 
-To start the activity monitor:
+Start the activity monitor:
 
 ```bash
-monitor start
+uv run standup start
 ```
 
-To see available options:
+View available options:
 
 ```bash
-monitor start --help
+uv run standup start --help
 ```
 
-Example: Run in test mode for 16 seconds (3 intervals of 5 seconds + 1 second buffer):
+Run in test mode (exits after 16 seconds for testing):
 
 ```bash
-monitor start --test
+uv run standup start --test
 ```
+
+## Development
+
+This project uses modern Python development practices:
+
+- **`uv`** for dependency management and virtual environments
+- **`ruff`** for linting and code formatting
+- **Modular architecture** for maintainability and testing
+- **Type hints** throughout for better code clarity
+- **Comprehensive documentation** with docstrings
+
+## Contributing
+
+Contributions are welcome! The modular architecture makes it easy to:
+- Add new activity tracking features
+- Implement additional notification methods
+- Extend data analysis capabilities
+- Improve the CLI interface
+
+Please ensure code follows the established patterns and includes appropriate documentation.
