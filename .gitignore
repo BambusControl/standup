@@ -1,6 +1,14 @@
 # UEV files
 %*
 
+# Dotfiles
+.*
+
+# Except
+!.gitignore
+!.python_version
+!.vscode/launch.json
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -11,3 +19,5 @@ wheels/
 
 # Virtual environments
 .venv
+
+data/*test*
