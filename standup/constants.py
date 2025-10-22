@@ -1,9 +1,4 @@
-"""
-Application-wide constants for the activity monitoring system.
-
-This module contains constants that are shared across multiple modules
-to ensure consistency and avoid duplication.
-"""
+"""Application-wide timing constants for data collection and polling."""
 
 # Data collection timing constants
 COLLECTION_INTERVAL_SECONDS = 5

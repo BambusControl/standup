@@ -1,3 +1,7 @@
+# Standup generated files
+standup_*
+!standup_config.yml
+
 # UEV files
 %*
 

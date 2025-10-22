@@ -4,44 +4,22 @@ A Python-based activity monitor for Windows that tracks keyboard and mouse input
 
 ## Todo
 
-- [ ] Show how many clicks occured during the work session on break reminder
-- [ ] Show how far the mouse travelled during the work session on break reminder
-- [ ] Show how many characters were typed during the work session on break reminder
-- [ ] Show how many times the active window changed during the work session on break reminder
-- [ ] Add customizable break reminder message
+- [ ] Add customizable break reminder messages
+- [ ] Support multiple notification strategies (pushups, stretches, eye exercises, etc.)
+- [ ] Add daily/weekly activity summaries
 
 
 ## Features
 
 *   **Smart Activity Monitoring**: Tracks keyboard and mouse activity with intelligent state management
-*   **Break Reminders**: Windows toast notifications to remind you to take breaks
-*   **Comprehensive Logging**:
-    *   Work and break sessions logged to `activity_log.csv`
-    *   Detailed raw activity data to `*_raw.csv` files for data science analysis
-    *   Per-second activity summaries including mouse movements, clicks, scrolls, and key presses
-    *   Active window title tracking for context analysis
-*   **Configurable Durations**: Customizable work and break time thresholds
+*   **Break Reminders**: Windows toast notifications with gamified pushup challenges
+*   **Session Logging**: Work and break sessions logged to `activity_log.csv`
+*   **Configuration File Support**: YAML-based configuration with CLI overrides
+*   **State Persistence**: Resumes session state across application restarts
+*   **Configurable Parameters**: Customizable work time, break time, and activation thresholds
 *   **Command-Line Interface**: Easy control using `click` framework
-*   **Test Mode**: Controlled execution for testing and data generation (`--test` flag)
+*   **Test Mode**: Controlled execution for testing (`--test` flag)
 *   **Modular Architecture**: Clean, maintainable codebase with separation of concerns
-
-## Architecture
-
-The application follows a modular design with clear separation of responsibilities:
-
-- **`app.py`** - Main application orchestration and coordination
-- **`activity_tracker.py`** - Global activity state management
-- **`state_handlers.py`** - State machine logic for IDLE/ACTIVE transitions
-- **`data_collector.py`** - High-level API for raw data collection
-- **`event_buffer.py`** - Thread-safe event buffering system
-- **`input_listeners.py`** - Mouse and keyboard event listeners
-- **`window_monitor.py`** - Active window polling and title extraction
-- **`raw_data_logger.py`** - CSV logging for raw activity data
-- **`activity_aggregator.py`** - Event aggregation and summarization
-- **`thread_manager.py`** - Thread lifecycle management
-- **`utils.py`** - Notifications, formatting, and utility functions
-- **`models.py`** - Data structures and type definitions
-- **`cli.py`** - Command-line interface
 
 ## Technology Stack
 
@@ -50,6 +28,7 @@ The application follows a modular design with clear separation of responsibiliti
 *   **`windows-toasts`** - Desktop notifications
 *   **`click`** - Command-line interface
 *   **`pygetwindow`** - Active window monitoring
+*   **`pyyaml`** - Configuration file parsing
 *   **`ruff`** - Code linting and formatting
 
 ## Installation
@@ -67,19 +46,38 @@ The application follows a modular design with clear separation of responsibiliti
 
 ## Usage
 
-Start the activity monitor:
+### Using Configuration File (Recommended)
+
+Create a `standup-config.yml` file in the project root:
+
+```yaml
+work_time_minutes: 60
+break_time_minutes: 2
+activation_threshold_seconds: 10
+csv_file: logs/activity_log.csv
+state_file: state/last_state.json
+test_mode: false
+```
+
+Then start the monitor:
 
 ```bash
 uv run standup start
 ```
 
-View available options:
+Use a custom config file:
+
+```bash
+uv run standup start --config-file path/to/config.yml
+```
+
+View all available options:
 
 ```bash
 uv run standup start --help
 ```
 
-Run in test mode (exits after 16 seconds for testing):
+Run in test mode:
 
 ```bash
 uv run standup start --test

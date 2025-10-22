@@ -1,9 +1,4 @@
-"""
-Main application module for the activity monitoring system.
-
-This module orchestrates the entire activity monitoring application, focusing
-on high-level coordination and the main application loop.
-"""
+"""Main application orchestration and lifecycle management."""
 
 import logging
 import time
@@ -14,11 +9,7 @@ import sys
 from pynput import keyboard, mouse
 
 from .activity_tracker import on_activity, set_last_activity_time
-from .data_collector import (
-    COLLECTION_INTERVAL_SECONDS,
-    start_data_collection,
-    stop_data_collection,
-)
+from .constants import COLLECTION_INTERVAL_SECONDS
 from .models import AppConfig, AppState, State, state_to_activity
 from .state_handlers import handle_active_state, handle_idle_state
 from .thread_manager import cleanup_threads, start_all_threads
@@ -35,20 +26,10 @@ DEFAULT_ENCODING = "utf-8"
 
 
 def run_app(config: AppConfig):
-    """
-    Main application entry point that runs the activity monitoring state machine.
-
-    Initializes all necessary components:
-    - Application state
-    - Input listeners for state machine
-    - Raw data collection system
-    - Background threads
-
-    Args:
-        config: Application configuration settings
-    """
+    """Main entry point: initialize components and run the state machine."""
     app_state = _initialize_app_state()
     # Try to load previously saved runtime state and resume from it
+    resumed_from_saved_state = False
     try:
         saved = load_runtime_state(config)
         if saved:
@@ -71,20 +52,21 @@ def run_app(config: AppConfig):
                 activation_candidate_start_monotonic=None,
                 break_reminder_shown=saved_break_reminder,
             )
-            # Restore last activity wall-clock time; monotonic will be reset to now
-            try:
-                set_last_activity_time(
-                    float(saved.get("last_activity_time", app_state.session_start_time))
-                )
-            except Exception:
-                logger.exception("Failed to set last activity time from saved state")
+            # When resuming, set last_activity_time to NOW so the app continues
+            # seamlessly in the restored state without immediate transitions
+            current_time = time.time()
+            current_monotonic = time.monotonic()
+            set_last_activity_time(current_time, current_monotonic)
+            resumed_from_saved_state = True
             logger.info("Resumed state from saved runtime state: %s", saved)
     except Exception:
         logger.exception("Failed to load saved runtime state")
-    # Set both wall-clock and monotonic last-activity timestamps
-    set_last_activity_time(
-        app_state.session_start_time, app_state.session_start_monotonic
-    )
+
+    # Only set initial activity timestamp if we're starting fresh (not resuming)
+    if not resumed_from_saved_state:
+        set_last_activity_time(
+            app_state.session_start_time, app_state.session_start_monotonic
+        )
 
     config = _configure_for_test_mode(config)
     logger.info("--- Activity Monitor Started (Config: %s) ---", config)
@@ -140,12 +122,7 @@ def run_app(config: AppConfig):
 
 
 def _initialize_app_state() -> AppState:
-    """
-    Initialize the application state.
-
-    Returns:
-        Initial AppState with IDLE state and current timestamp
-    """
+    """Return initial IDLE state with current timestamps."""
     return AppState(
         current_state=State.IDLE,
         session_start_time=time.time(),
@@ -156,15 +133,7 @@ def _initialize_app_state() -> AppState:
 
 
 def _configure_for_test_mode(config: AppConfig) -> AppConfig:
-    """
-    Configure the application for test mode if enabled.
-
-    Args:
-        config: Original configuration
-
-    Returns:
-        Modified configuration for test mode, or original if not test mode
-    """
+    """Modify config for test mode or return unchanged."""
     if not config.test_mode:
         return config
 
@@ -174,41 +143,20 @@ def _configure_for_test_mode(config: AppConfig) -> AppConfig:
 
 
 def _setup_monitoring_system(config: AppConfig) -> list:
-    """
-    Set up all monitoring threads and listeners.
-
-    Args:
-        config: Application configuration
-
-    Returns:
-        List of all thread objects that need to be started
-    """
+    """Create and return all monitoring threads and listeners."""
     all_threads = []
 
     # Create state machine listeners
     state_machine_listeners = _create_state_machine_listeners()
     all_threads.extend(state_machine_listeners)
 
-    # Create data collection system
-    raw_data_filename = config.csv_file.with_stem(f"{config.csv_file.stem}_raw")
-
-    if config.test_mode:
-        # Empty the file before starting during tests
-        raw_data_filename.write_text("", encoding=DEFAULT_ENCODING)
-
-    data_collector_threads = start_data_collection(raw_data_filename)
-    all_threads.extend(data_collector_threads)
+    # No window monitoring system (removed)
 
     return all_threads
 
 
 def _create_state_machine_listeners() -> list:
-    """
-    Create input listeners for the state machine.
-
-    Returns:
-        List of listener objects for mouse and keyboard
-    """
+    """Create mouse and keyboard input listeners."""
     mouse_listener = mouse.Listener(
         on_move=on_activity, on_click=on_activity, on_scroll=on_activity
     )
@@ -218,13 +166,7 @@ def _create_state_machine_listeners() -> list:
 
 
 def _run_main_loop(app_state: AppState, config: AppConfig) -> AppState:
-    """
-    Run the main application loop with state machine processing.
-
-    Args:
-        app_state: Current application state
-        config: Application configuration
-    """
+    """Run main state machine loop until interrupted."""
     try:
         while True:
             app_state = _process_current_state(app_state, config)
@@ -236,13 +178,7 @@ def _run_main_loop(app_state: AppState, config: AppConfig) -> AppState:
 
 
 def _run_main_test_loop(app_state: AppState, config: AppConfig) -> AppState:
-    """
-    Run the main application loop for testing purposes.
-
-    Args:
-        app_state: Current application state
-        config: Application configuration
-    """
+    """Run state machine loop for limited test duration."""
     start_time = time.time()
 
     while not _should_exit_test_mode(start_time):
@@ -252,16 +188,7 @@ def _run_main_test_loop(app_state: AppState, config: AppConfig) -> AppState:
 
 
 def _should_exit_test_mode(start_time: float) -> bool:
-    """
-    Check if we should exit due to test mode duration limit.
-
-    Args:
-        config: Application configuration
-        start_time: When the application started
-
-    Returns:
-        True if should exit, False otherwise
-    """
+    """Check if test mode duration limit reached."""
     test_duration = (
         COLLECTION_INTERVAL_SECONDS * TEST_MODE_DURATION_MULTIPLIER
         + TEST_MODE_BUFFER_SECONDS
@@ -275,16 +202,7 @@ def _should_exit_test_mode(start_time: float) -> bool:
 
 
 def _process_current_state(app_state: AppState, config: AppConfig) -> AppState:
-    """
-    Process the current state and return updated state.
-
-    Args:
-        app_state: Current application state
-        config: Application configuration
-
-    Returns:
-        Updated application state
-    """
+    """Process current state and return updated state."""
     if app_state.current_state == State.ACTIVE:
         return handle_active_state(app_state, config)
     elif app_state.current_state == State.IDLE:
@@ -294,14 +212,7 @@ def _process_current_state(app_state: AppState, config: AppConfig) -> AppState:
 
 
 def _cleanup_and_shutdown(app_state: AppState, config: AppConfig, all_threads: list):
-    """
-    Perform cleanup and graceful shutdown of all components.
-
-    Args:
-        app_state: Final application state
-        config: Application configuration
-        all_threads: List of all active threads
-    """
+    """Cleanup and graceful shutdown of all components."""
     logger.info("Shutting down. Saving final session.")
 
     _log_final_session(app_state, config)
@@ -312,20 +223,13 @@ def _cleanup_and_shutdown(app_state: AppState, config: AppConfig, all_threads: l
         save_runtime_state(config, app_state, get_last_activity_time())
     except Exception:
         logger.exception("Failed to save runtime state during cleanup")
-    stop_data_collection()
     cleanup_threads(all_threads)
 
     logger.info("Listeners stopped. Exiting.")
 
 
 def _log_final_session(app_state: AppState, config: AppConfig):
-    """
-    Log the final session if it meets duration requirements.
-
-    Args:
-        app_state: Final application state
-        config: Application configuration
-    """
+    """Log final session if duration meets minimum threshold."""
     final_time = time.time()
     # Prefer monotonic-based duration to avoid issues from clock adjustments
     try:

@@ -5,18 +5,23 @@
 
 ## Core Functionality
 - **Activity Monitoring**: Tracks keyboard/mouse input with configurable thresholds
-- **Break Reminders**: Windows toast notifications after configurable work periods (ie: 60 minutes)
+- **Break Reminders**: Windows toast notifications with gamified pushup challenges after configurable work periods (default: 60 minutes)
 - **Session Logging**: Records work/break sessions to CSV files with timestamps and durations
-- **Raw Data Collection**: Detailed per-second activity summaries including mouse movements, clicks, scrolls, key presses, and active window titles
 - **State Persistence**: Saves runtime state to resume sessions after application restart
-- **Configurable Parameters**: Customizable work duration, break duration, and activation thresholds
+- **Configuration Management**: YAML-based configuration file support with strict validation (no fallbacks)
 
 ## State Machine Logic
-- **IDLE → ACTIVE**: Requires sustained activity (ie: 10 seconds of continuous input) to prevent false positives
-- **ACTIVE → IDLE**: Transitions after configured inactivity period (ie: 2 minutes)
-- **Break Reminders**: Shown after continuous work period; includes gamified pushup recommendations
+- **IDLE → ACTIVE**: Requires sustained activity (default: 10 seconds of continuous input) to prevent false positives
+- **ACTIVE → IDLE**: Transitions after configured inactivity period (default: 2 minutes)
+- **Break Reminders**: Shown after continuous work period; includes gamified pushup recommendations (1 pushup per 10 minutes of work)
 - **Sleep Detection**: Uses both wall-clock and monotonic timestamps to handle system suspend/resume
- and formatting
+
+## Technology Stack
+- **pynput**: Input monitoring (mouse/keyboard events)
+- **windows-toasts**: Desktop notifications
+- **click**: Command-line interface
+- **pyyaml**: Configuration file parsing
+- **ruff**: Code linting and formatting
 
 ## Dependency Management
 This project uses `uv` for dependency management:
@@ -31,3 +36,10 @@ This project uses `uv` for dependency management:
 - **Defensive Programming**: Handles system sleep/wake, clock adjustments, thread safety
 - **Signal Handling**: SIGINT/SIGTERM handlers for graceful shutdown with state persistence
 - **Modular Architecture**: Single-responsibility modules with clear interfaces
+
+## Documentation Philosophy
+- **Self-Documenting Code**: Code should be clear and readable without extensive documentation
+- **Concise Docstrings**: Single-line docstrings that describe what functions/classes do, not how
+- **No Args/Returns/Raises**: Type hints provide parameter and return type information
+- **Minimal Markdown**: Avoid extensive architecture documentation in README or other markdown files
+- **Let Code Speak**: Well-named functions, variables, and clear logic over verbose comments

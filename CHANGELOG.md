@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2025-10-22
+
+### Added
+- YAML configuration file support (`standup-config.yml`)
+- `config_loader.py` module for parsing YAML configuration with defaults
+- `--config-file` CLI option to specify custom configuration file path
+- `csv_file` configuration parameter for activity log path
+- `state_file` configuration parameter for runtime state persistence path
+- Each file type now has its own configurable path
+
+### Changed
+- CLI now only accepts `--config-file` parameter; all other configuration via YAML
+- File paths now explicitly configured via `csv_file` and `state_file` parameters
+- Simplified data collection by removing window monitoring system
+- Configuration is now strict: application fails if required fields are missing
+- Removed all fallback/default configurations - config file is mandatory
+- Updated documentation to reflect configuration file workflow
+
+### Removed
+- Raw data logging functionality (`activity_log_raw.csv` files)
+- Window monitoring system (`window_monitor.py`, `data_collector.py`)
+- `raw_data_logger.py` module
+- `activity_aggregator.py` module
+- `event_buffer.py` module
+- `input_listeners.py` module
+- Per-second activity data collection (originally intended for ML analysis)
+- CLI parameters for work-time, break-time, csv-file, test, and activation-threshold
+
 ## [0.3.0] - 2025-10-22
 
 ### Added

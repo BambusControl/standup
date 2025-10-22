@@ -1,0 +1,26 @@
+# Standup Activity Monitor Configuration File
+
+# Work duration before break reminder (in minutes)
+# Default: 50 minutes
+work_time_minutes: 50
+
+# Inactivity duration to be considered a break (in minutes)
+# Default: 3 minutes
+break_time_minutes: 3
+
+# Seconds of sustained activity required to transition to ACTIVE state
+# Default: 10 seconds
+# This prevents false positives from brief accidental input
+activation_threshold_seconds: 10
+
+# Path to CSV file for logging work/break sessions
+# Default: standup_activity_log.csv
+csv_file: standup_activity_log.csv
+
+# Path to state file for runtime persistence
+# Default: standup_last_state.json
+state_file: standup_last_state.json
+
+# Enable test mode (exits after limited duration for testing)
+# Default: false
+test_mode: false

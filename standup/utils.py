@@ -1,11 +1,4 @@
-"""
-Utility functions for notifications, logging, and data formatting.
-
-This module provides common utility functions used throughout the application:
-- Windows toast notifications
-- CSV logging functionality
-- Duration formatting helpers
-"""
+"""Utility functions for notifications, CSV logging, and state persistence."""
 
 import csv
 import json
@@ -35,17 +28,7 @@ CSV_COLUMNS = ["Activity Type", "Start Time", "End Time", "Duration (HH:MM:SS)"]
 
 
 def _create_toast_message(header: str, line1: str, line2: str = "") -> list:
-    """
-    Create a list of message lines for toast notification.
-
-    Args:
-        header: Notification title
-        line1: Primary message line
-        line2: Optional secondary message line
-
-    Returns:
-        List of message lines for the toast
-    """
+    """Create message lines list for toast notification."""
     message_lines = [header, line1]
     if line2:
         message_lines.append(line2)
@@ -53,14 +36,7 @@ def _create_toast_message(header: str, line1: str, line2: str = "") -> list:
 
 
 def show_notification(header: str, line1: str, line2: str = ""):
-    """
-    Displays a Windows toast notification.
-
-    Args:
-        header: Notification title
-        line1: Primary message line
-        line2: Optional secondary message line
-    """
+    """Display Windows toast notification with header and message lines."""
     try:
         toaster = WindowsToaster(NOTIFICATION_APP_NAME)
         message_lines = _create_toast_message(header, line1, line2)
@@ -76,49 +52,21 @@ def show_notification(header: str, line1: str, line2: str = ""):
 
 
 def _format_timestamps(start_time: float, end_time: float) -> tuple[str, str]:
-    """
-    Format start and end timestamps to ISO format.
-
-    Args:
-        start_time: Session start timestamp
-        end_time: Session end timestamp
-
-    Returns:
-        Tuple of (formatted_start_time, formatted_end_time)
-    """
+    """Format start and end timestamps to ISO format strings."""
     formatted_start = datetime.fromtimestamp(start_time).astimezone().isoformat()
     formatted_end = datetime.fromtimestamp(end_time).astimezone().isoformat()
     return formatted_start, formatted_end
 
 
 def _should_write_csv_header(file_handle) -> bool:
-    """
-    Check if CSV header should be written based on file position.
-
-    Args:
-        file_handle: Open file handle
-
-    Returns:
-        True if header should be written, False otherwise
-    """
+    """Check if CSV header should be written based on file position."""
     return file_handle.tell() == HEADER_FILE_POSITION
 
 
 def _prepare_session_data(
     activity_type: ActivityType, start_time: float, end_time: float, duration: float
 ) -> dict:
-    """
-    Prepare session data for CSV logging.
-
-    Args:
-        activity_type: Type of activity ("Work" or "Break")
-        start_time: Session start timestamp
-        end_time: Session end timestamp
-        duration: Session duration in seconds
-
-    Returns:
-        Dictionary with formatted session data
-    """
+    """Prepare formatted session data dict for CSV logging."""
     formatted_start, formatted_end = _format_timestamps(start_time, end_time)
 
     return {
@@ -136,16 +84,7 @@ def log_to_csv(
     end_time: float,
     duration: float,
 ):
-    """
-    Logs a completed session to the CSV file.
-
-    Args:
-        config: Application configuration containing CSV file path
-        activity_type: Type of activity ("Work" or "Break")
-        start_time: Session start timestamp
-        end_time: Session end timestamp
-        duration: Session duration in seconds
-    """
+    """Log completed session to CSV file with timestamps and duration."""
     if not config.csv_file:
         return
 
@@ -175,55 +114,28 @@ def log_to_csv(
 
 
 def format_duration(seconds: float) -> str:
-    """
-    Formats seconds into a human-readable HH:MM:SS string.
-
-    Args:
-        seconds: Duration in seconds
-
-    Returns:
-        Formatted duration string (e.g., "1:23:45")
-    """
+    """Format seconds as HH:MM:SS string."""
     return str(timedelta(seconds=int(seconds)))
 
 
 def _should_log_session(duration: float) -> bool:
-    """
-    Determine if a session should be logged based on its duration.
-
-    Args:
-        duration: Session duration in seconds
-
-    Returns:
-        True if session should be logged, False otherwise
-    """
+    """Check if session duration exceeds minimum threshold for logging."""
     return duration > MINIMUM_SESSION_DURATION_SECONDS
 
 
 def _get_state_file_path(config: Optional[AppConfig]) -> Path:
-    """
-    Return a path to store runtime state (last activity & session info).
-
-    If config is provided, place the file next to the configured CSV file.
-    Otherwise, place it under the workspace `data` directory.
-    """
-    if config and getattr(config, "csv_file", None):
-        return config.csv_file.parent / "last_state.json"
-    return Path("data") / "last_state.json"
+    """Get state file path from config or raise if missing."""
+    if not config:
+        raise ValueError("Configuration is required to determine state file path")
+    if not hasattr(config, "state_file") or not config.state_file:
+        raise ValueError("Configuration must specify state_file path")
+    return config.state_file
 
 
 def save_runtime_state(
     config: Optional[AppConfig], app_state, last_activity_time: float
 ):
-    """
-    Save minimal runtime state to disk so the application can resume after restart.
-
-    Stored fields:
-      - current_state: "ACTIVE" or "IDLE"
-      - session_start_time: wall-clock timestamp for current session start
-      - break_reminder_shown: whether a break reminder was already shown
-      - last_activity_time: wall-clock timestamp of last input activity
-    """
+    """Save runtime state to disk for session resumption after restart."""
     state_file = _get_state_file_path(config)
     state = {
         "current_state": getattr(
@@ -243,11 +155,7 @@ def save_runtime_state(
 
 
 def load_runtime_state(config: Optional[AppConfig]):
-    """
-    Load previously saved runtime state from disk.
-
-    Returns a dict or None when the file doesn't exist or can't be read.
-    """
+    """Load previously saved runtime state from disk or return None."""
     state_file = _get_state_file_path(config)
     if not state_file.exists():
         return None
@@ -261,9 +169,7 @@ def load_runtime_state(config: Optional[AppConfig]):
 
 
 def clear_runtime_state(config: Optional[AppConfig]):
-    """
-    Remove the saved runtime state file if present.
-    """
+    """Remove saved runtime state file if present."""
     state_file = _get_state_file_path(config)
     try:
         if state_file.exists():

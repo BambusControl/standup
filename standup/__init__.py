@@ -1,6 +1,1 @@
-"""
-Activity monitoring application for tracking work and break sessions.
-
-This package provides tools for monitoring user activity through keyboard and mouse
-input, managing work/break sessions, and logging activity data.
-"""
+"""Activity monitor tracking work/break sessions via keyboard/mouse input."""
