@@ -9,6 +9,7 @@ import time
 
 # Global state for activity tracking
 last_activity_time = time.time()
+last_activity_monotonic = time.monotonic()
 
 
 def on_activity(x=None, y=None, button=None, pressed=None, key=None):
@@ -24,8 +25,9 @@ def on_activity(x=None, y=None, button=None, pressed=None, key=None):
         pressed: Button press state (optional)
         key: Keyboard key (optional)
     """
-    global last_activity_time
+    global last_activity_time, last_activity_monotonic
     last_activity_time = time.time()
+    last_activity_monotonic = time.monotonic()
 
 
 def get_last_activity_time() -> float:
@@ -38,12 +40,26 @@ def get_last_activity_time() -> float:
     return last_activity_time
 
 
-def set_last_activity_time(timestamp: float):
+def set_last_activity_time(timestamp: float, monotonic_timestamp: float | None = None):
     """
     Set the last activity time (used during initialization).
 
     Args:
         timestamp: New timestamp for last activity
     """
-    global last_activity_time
+    global last_activity_time, last_activity_monotonic
     last_activity_time = timestamp
+    if monotonic_timestamp is None:
+        last_activity_monotonic = time.monotonic()
+    else:
+        last_activity_monotonic = monotonic_timestamp
+
+
+def get_last_activity_monotonic() -> float:
+    """
+    Get the monotonic timestamp of the last detected activity.
+
+    Returns:
+        Monotonic timestamp of last activity
+    """
+    return last_activity_monotonic

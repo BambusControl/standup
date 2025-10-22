@@ -34,20 +34,47 @@ def create_input_listeners() -> list:
 
 
 def _on_move(x, y):
-    """Callback for mouse movement events."""
+    """
+    Callback for mouse movement events.
+
+    Args:
+        x: Mouse x-coordinate
+        y: Mouse y-coordinate
+    """
     log_mouse_move()
 
 
 def _on_click(x, y, button, pressed):
-    """Callback for mouse click events."""
+    """
+    Callback for mouse click events.
+
+    Args:
+        x: Mouse x-coordinate
+        y: Mouse y-coordinate
+        button: Mouse button that was clicked
+        pressed: Whether button was pressed or released
+    """
     log_mouse_click()
 
 
 def _on_scroll(x, y, dx, dy):
-    """Callback for mouse scroll events."""
+    """
+    Callback for mouse scroll events.
+
+    Args:
+        x: Mouse x-coordinate
+        y: Mouse y-coordinate
+        dx: Horizontal scroll delta
+        dy: Vertical scroll delta
+    """
     log_mouse_scroll()
 
 
 def _on_press(key):
-    """Callback for keyboard press events."""
+    """
+    Callback for keyboard press events.
+
+    Args:
+        key: The key that was pressed
+    """
     log_key_press()

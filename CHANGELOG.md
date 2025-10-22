@@ -2,30 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.3.0] - 2025-10-22
 
 ### Added
-- Created dedicated modules for better separation of concerns:
-  - `activity_tracker.py` - Global activity state management
-  - `thread_manager.py` - Thread lifecycle management
-  - `input_listeners.py` - Input event listeners
-  - `event_buffer.py` - Thread-safe event buffering
-  - `window_monitor.py` - Active window monitoring
-  - `raw_data_logger.py` - Raw data CSV logging
-  - `activity_aggregator.py` - Activity data aggregation
+- Implemented gamified break reminders with pushup challenge (1 pushup per 10 minutes of work)
+- Added `constants.py` module for application-wide shared constants
+- Implemented runtime state persistence and resumption across application restarts
+- Added monotonic timestamp tracking for more robust duration calculations
+- Created `save_runtime_state()`, `load_runtime_state()`, and `clear_runtime_state()` utility functions
+- Added support for system sleep/wake detection using dual timestamp approach
 
 ### Changed
-- Significantly improved code readability and maintainability following Python best practices
-- Refactored `data_collector.py` to serve as a high-level API coordinator
-- Split monolithic modules into focused, single-responsibility components
-- Enhanced modular architecture with clear separation between data collection, state management, and UI
-- Improved error handling and defensive programming throughout
-- Applied consistent naming conventions and documentation standards
+- Enhanced window polling frequency from 5s to 1s for more accurate active window tracking
+- Improved activity aggregation logic with better edge case handling
+- Updated state handlers to use monotonic timestamps for session duration calculations
+- Refactored break reminder notifications to include personalized pushup goals
+- Enhanced thread management with improved lifecycle handling
+- Improved raw data logger with more comprehensive error handling
+- Updated event buffer implementation for better thread safety
+- Refined input listener implementations with enhanced debugging capabilities
 
 ### Fixed
-- Eliminated code duplication through proper abstraction
-- Reduced cyclic dependencies between modules
-- Improved thread safety in event collection systems
+- Resolved issues with session duration accuracy during system clock adjustments
+- Fixed final state saving to preserve session data correctly on application exit
+- Improved handling of activation candidate timing edge cases
+- Enhanced error recovery in activity tracking modules
+- Fixed potential race conditions in multi-threaded event collection
 
 ## [0.2.0] - 2025-08-01
 
@@ -57,3 +59,28 @@ All notable changes to this project will be documented in this file.
 
 - Removed unused line from `pyproject.toml`.
 - Integrated `ruff` for code linting and formatting.
+
+## [Unreleased]
+
+### Added
+- Created dedicated modules for better separation of concerns:
+  - `activity_tracker.py` - Global activity state management
+  - `thread_manager.py` - Thread lifecycle management
+  - `input_listeners.py` - Input event listeners
+  - `event_buffer.py` - Thread-safe event buffering
+  - `window_monitor.py` - Active window monitoring
+  - `raw_data_logger.py` - Raw data CSV logging
+  - `activity_aggregator.py` - Activity data aggregation
+
+### Changed
+- Significantly improved code readability and maintainability following Python best practices
+- Refactored `data_collector.py` to serve as a high-level API coordinator
+- Split monolithic modules into focused, single-responsibility components
+- Enhanced modular architecture with clear separation between data collection, state management, and UI
+- Improved error handling and defensive programming throughout
+- Applied consistent naming conventions and documentation standards
+
+### Fixed
+- Eliminated code duplication through proper abstraction
+- Reduced cyclic dependencies between modules
+- Improved thread safety in event collection systems

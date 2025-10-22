@@ -12,22 +12,36 @@ import time
 from pathlib import Path
 
 from .activity_aggregator import aggregate_events_to_summary
+from .constants import COLLECTION_INTERVAL_SECONDS
 from .event_buffer import extract_events_for_interval
 
+# Set up module-level logger
+logger = logging.getLogger(__name__)
+
 # Configuration constants
+CSV_DELIMITER = ";"
+CSV_ENCODING = "utf-8"
+HEADER_FILE_POSITION = 0
+MINIMUM_WAIT_TIME = 0
+
+# CSV column definitions for better maintainability
+WINDOW_TITLE_COLUMNS = [
+    "active_window_1",  # Most recent active window
+    "active_window_2",  # Second most recent
+    "active_window_3",  # Third most recent
+    "active_window_4",  # Fourth most recent
+    "active_window_5",  # Fifth most recent
+]
+
 CSV_HEADER = [
     "timestamp",
     "mouse_moves_count",
     "mouse_clicks_count",
     "mouse_scrolls_count",
     "key_presses_count",
-    "last_window_title",
+    *WINDOW_TITLE_COLUMNS,
     "activity_detected",
 ]
-
-COLLECTION_INTERVAL_SECONDS = 5
-CSV_DELIMITER = ";"
-CSV_ENCODING = "utf-8"
 
 # Module state
 _summary_logging_stop_event = threading.Event()
@@ -47,8 +61,21 @@ def create_summary_logging_thread(log_file: Path) -> threading.Thread:
 
 
 def stop_summary_logging():
-    """Signal the summary logging thread to stop."""
+    """Signal the summary logging thread to stop gracefully."""
     _summary_logging_stop_event.set()
+
+
+def _should_write_header(file_handle) -> bool:
+    """
+    Check if CSV header should be written based on file position.
+
+    Args:
+        file_handle: Open file handle
+
+    Returns:
+        True if header should be written, False otherwise
+    """
+    return file_handle.tell() == HEADER_FILE_POSITION
 
 
 def write_summary_row(summary_data: dict, log_file_path: Path):
@@ -69,11 +96,11 @@ def write_summary_row(summary_data: dict, log_file_path: Path):
             )
 
             # Write header only if file is new or empty
-            if file.tell() == 0:
+            if _should_write_header(file):
                 writer.writeheader()
             writer.writerow(summary_data)
     except IOError as e:
-        logging.error(f"Failed to write to raw log file: {e}")
+        logger.error("Failed to write to raw log file", exc_info=e)
 
 
 def _log_summary_data(log_path: Path):
@@ -100,6 +127,20 @@ def _log_summary_data(log_path: Path):
         _wait_for_next_interval(current_interval_start)
 
 
+def _calculate_wait_time(interval_start_time: float) -> float:
+    """
+    Calculate how long to wait for the next interval.
+
+    Args:
+        interval_start_time: Timestamp when the current interval started
+
+    Returns:
+        Time to wait in seconds (minimum 0)
+    """
+    elapsed_time = time.time() - interval_start_time
+    return max(MINIMUM_WAIT_TIME, COLLECTION_INTERVAL_SECONDS - elapsed_time)
+
+
 def _wait_for_next_interval(interval_start_time: float):
     """
     Wait for the next collection interval, adjusting for processing time.
@@ -107,6 +148,6 @@ def _wait_for_next_interval(interval_start_time: float):
     Args:
         interval_start_time: Timestamp when the current interval started
     """
-    time_to_wait = COLLECTION_INTERVAL_SECONDS - (time.time() - interval_start_time)
-    if time_to_wait > 0:
+    time_to_wait = _calculate_wait_time(interval_start_time)
+    if time_to_wait > MINIMUM_WAIT_TIME:
         _summary_logging_stop_event.wait(time_to_wait)

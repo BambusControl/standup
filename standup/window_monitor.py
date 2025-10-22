@@ -10,14 +10,19 @@ import threading
 
 import pygetwindow as gw
 
+from .constants import WINDOW_POLL_INTERVAL_SECONDS
 from .event_buffer import log_window_poll
 
+# Set up module-level logger
+logger = logging.getLogger(__name__)
+
 # Configuration
-COLLECTION_INTERVAL_SECONDS = 5
+MAX_WINDOW_TITLES_TO_TRACK = 5
 NO_WINDOW_TITLE = "No active window"
 
 # Module state
 _polling_stop_event = threading.Event()
+_last_window_titles = []  # Track last active window titles
 
 
 def create_window_polling_thread() -> threading.Thread:
@@ -31,8 +36,33 @@ def create_window_polling_thread() -> threading.Thread:
 
 
 def stop_window_polling():
-    """Signal the window polling thread to stop."""
+    """Signal the window polling thread to stop gracefully."""
     _polling_stop_event.set()
+
+
+def _update_window_titles_list(window_title: str) -> None:
+    """
+    Update the global list of recent window titles.
+
+    Args:
+        window_title: New window title to add to the list
+    """
+    global _last_window_titles
+
+    # Skip update if title hasn't changed
+    if _last_window_titles and _last_window_titles[0] == window_title:
+        return
+
+    # Remove title if it exists elsewhere in the list
+    if window_title in _last_window_titles:
+        _last_window_titles.remove(window_title)
+
+    # Insert at the beginning (most recent)
+    _last_window_titles.insert(0, window_title)
+
+    # Keep only the most recent titles
+    if len(_last_window_titles) > MAX_WINDOW_TITLES_TO_TRACK:
+        _last_window_titles = _last_window_titles[:MAX_WINDOW_TITLES_TO_TRACK]
 
 
 def _poll_active_window():
@@ -47,12 +77,14 @@ def _poll_active_window():
         try:
             active_window = gw.getActiveWindow()
             window_title = _get_window_title(active_window)
-            log_window_poll(window_title)
+
+            _update_window_titles_list(window_title)
+            log_window_poll(_last_window_titles)
         except Exception as e:
-            logging.error(f"Error polling active window: {e}")
+            logger.error("Error polling active window", exc_info=e)
 
         # Wait before next poll
-        _polling_stop_event.wait(COLLECTION_INTERVAL_SECONDS)
+        _polling_stop_event.wait(WINDOW_POLL_INTERVAL_SECONDS)
 
 
 def _get_window_title(active_window) -> str:

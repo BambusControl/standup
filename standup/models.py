@@ -54,6 +54,7 @@ class AppConfig(NamedTuple):
     break_duration_sec: int
     csv_file: Path
     test_mode: bool
+    activation_threshold_sec: int
 
 
 class AppState(NamedTuple):
@@ -68,4 +69,6 @@ class AppState(NamedTuple):
 
     current_state: State
     session_start_time: float
+    session_start_monotonic: float
+    activation_candidate_start_monotonic: float | None
     break_reminder_shown: bool

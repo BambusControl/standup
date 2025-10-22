@@ -20,4 +20,4 @@ wheels/
 # Virtual environments
 .venv
 
-data/*test*
+data/

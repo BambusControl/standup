@@ -8,12 +8,20 @@ raw data collection system, coordinating all the individual components.
 import logging
 from pathlib import Path
 
+from .constants import COLLECTION_INTERVAL_SECONDS
 from .input_listeners import create_input_listeners
-from .window_monitor import create_window_polling_thread, stop_window_polling
 from .raw_data_logger import create_summary_logging_thread, stop_summary_logging
+from .window_monitor import create_window_polling_thread, stop_window_polling
+
+# Set up module-level logger
+logger = logging.getLogger(__name__)
 
 # Re-export for backward compatibility
-COLLECTION_INTERVAL_SECONDS = 5
+__all__ = [
+    "start_data_collection",
+    "stop_data_collection",
+    "COLLECTION_INTERVAL_SECONDS",
+]
 
 
 def start_data_collection(log_file: Path) -> list:
@@ -37,7 +45,7 @@ def start_data_collection(log_file: Path) -> list:
     polling_thread = create_window_polling_thread()
     summary_logging_thread = create_summary_logging_thread(log_file)
 
-    logging.info(f"Raw data collection system created. Will log to '{log_file}'")
+    logger.info("Raw data collection system created. Will log to '%s'", log_file)
 
     return [*input_listeners, polling_thread, summary_logging_thread]
 

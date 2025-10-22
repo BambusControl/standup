@@ -17,6 +17,9 @@ DEFAULT_WORK_TIME_MINUTES = 60
 DEFAULT_BREAK_TIME_MINUTES = 2
 DEFAULT_CSV_PATH = "data/activity_log.csv"
 
+# Time conversion constants
+SECONDS_PER_MINUTE = 60
+
 
 @click.group()
 def cli():
@@ -45,19 +48,32 @@ def cli():
     is_flag=True,
     help="Run in test mode (exits after limited duration).",
 )
-def start(work_time: int, break_time: int, csv_file: str, test: bool):
+@click.option(
+    "--activation-threshold",
+    default=10,
+    help="Seconds of sustained activity required to change to ACTIVE state.",
+)
+def start(
+    work_time: int,
+    break_time: int,
+    csv_file: str,
+    test: bool,
+    activation_threshold: int,
+):
     """Starts the activity monitor with the specified configuration."""
     _setup_logging()
 
     csv_filepath = _ensure_csv_directory_exists(csv_file)
-    config = _create_app_config(work_time, break_time, csv_filepath, test)
+    config = _create_app_config(
+        work_time, break_time, csv_filepath, test, activation_threshold
+    )
 
     click.echo("Starting the activity monitor...")
     run_app(config)
 
 
 def _setup_logging():
-    """Configure logging for the application."""
+    """Configure basic logging for the application with INFO level."""
     logging.basicConfig(level=logging.INFO)
 
 
@@ -77,7 +93,11 @@ def _ensure_csv_directory_exists(csv_file: str) -> Path:
 
 
 def _create_app_config(
-    work_time: int, break_time: int, csv_filepath: Path, test_mode: bool
+    work_time: int,
+    break_time: int,
+    csv_filepath: Path,
+    test_mode: bool,
+    activation_threshold: int,
 ) -> AppConfig:
     """
     Create application configuration from CLI parameters.
@@ -91,11 +111,10 @@ def _create_app_config(
     Returns:
         Configured AppConfig instance
     """
-    SECONDS_PER_MINUTE = 60
-
     return AppConfig(
         work_duration_sec=work_time * SECONDS_PER_MINUTE,
         break_duration_sec=break_time * SECONDS_PER_MINUTE,
         csv_file=csv_filepath,
         test_mode=test_mode,
+        activation_threshold_sec=activation_threshold,
     )
