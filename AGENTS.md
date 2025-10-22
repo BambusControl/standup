@@ -5,10 +5,11 @@
 
 ## Core Functionality
 - **Activity Monitoring**: Tracks keyboard/mouse input with configurable thresholds
-- **Break Reminders**: Windows toast notifications with gamified pushup challenges after configurable work periods (default: 60 minutes)
+- **Break Reminders**: Windows toast notifications with gamified pushup challenges after configurable work periods (default: 50 minutes)
 - **Session Logging**: Records work/break sessions to CSV files with timestamps and durations
 - **State Persistence**: Saves runtime state to resume sessions after application restart
-- **Configuration Management**: YAML-based configuration file support with strict validation (no fallbacks)
+- **Configuration Management**: YAML-based configuration with automatic default file creation on first run
+- **Direct Execution**: Run from git using `uvx --from ./ standup` without installation
 
 ## State Machine Logic
 - **IDLE → ACTIVE**: Requires sustained activity (default: 10 seconds of continuous input) to prevent false positives
@@ -25,10 +26,11 @@
 
 ## Dependency Management
 This project uses `uv` for dependency management:
+- **Primary execution**: `uvx --from ./ standup` (run directly from git)
 - Install dependencies: `uv sync`
 - Add dependency: `uv add <package_name>`
 - Remove dependency: `uv remove <package_name>`
-- Run the application: `uv run standup start`
+- Run from local install: `uv run standup`
 
 ## Key Design Patterns
 - **State Machine**: Clean IDLE/ACTIVE transitions with configurable thresholds

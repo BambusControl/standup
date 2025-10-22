@@ -13,21 +13,53 @@ logger = logging.getLogger(__name__)
 # Default configuration values
 DEFAULT_ACTIVATION_THRESHOLD_SECONDS = 10
 DEFAULT_CONFIG_FILE = "standup_config.yml"
+DEFAULT_WORK_TIME_MINUTES = 50
+DEFAULT_BREAK_TIME_MINUTES = 3
+DEFAULT_CSV_FILE = "standup_activity_log.csv"
+DEFAULT_STATE_FILE = "standup_last_state.json"
+DEFAULT_TEST_MODE = False
 
 # Time conversion constants
 SECONDS_PER_MINUTE = 60
 
+# Default config file template
+DEFAULT_CONFIG_TEMPLATE = """# Standup Activity Monitor Configuration File
+
+# Work duration before break reminder (in minutes)
+# Default: 50 minutes
+work_time_minutes: 50
+
+# Inactivity duration to be considered a break (in minutes)
+# Default: 3 minutes
+break_time_minutes: 3
+
+# Seconds of sustained activity required to transition to ACTIVE state
+# Default: 10 seconds
+# This prevents false positives from brief accidental input
+activation_threshold_seconds: 10
+
+# Path to CSV file for logging work/break sessions
+# Default: standup_activity_log.csv
+csv_file: standup_activity_log.csv
+
+# Path to state file for runtime persistence
+# Default: standup_last_state.json
+state_file: standup_last_state.json
+
+# Enable test mode (exits after limited duration for testing)
+# Default: false
+test_mode: false
+"""
+
 
 def load_config_from_file(config_path: Optional[Path] = None) -> AppConfig:
-    """Load and parse YAML config; fail if missing or invalid."""
+    """Load and parse YAML config; create default if missing."""
     if config_path is None:
         config_path = Path(DEFAULT_CONFIG_FILE)
 
     if not config_path.exists():
-        raise FileNotFoundError(
-            f"Configuration file '{config_path}' not found. "
-            f"Please create a configuration file with required settings."
-        )
+        _create_default_config(config_path)
+        logger.info("Created default configuration file at '%s'", config_path)
 
     try:
         with config_path.open("r", encoding="utf-8") as f:
@@ -49,6 +81,17 @@ def load_config_from_file(config_path: Optional[Path] = None) -> AppConfig:
         raise
     except Exception as e:
         logger.error("Failed to load configuration file: %s", e)
+        raise
+
+
+def _create_default_config(config_path: Path) -> None:
+    """Create a default configuration file with sensible defaults."""
+    try:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with config_path.open("w", encoding="utf-8") as f:
+            f.write(DEFAULT_CONFIG_TEMPLATE)
+    except Exception as e:
+        logger.error("Failed to create default configuration file: %s", e)
         raise
 
 

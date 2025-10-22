@@ -31,74 +31,69 @@ A Python-based activity monitor for Windows that tracks keyboard and mouse input
 *   **`pyyaml`** - Configuration file parsing
 *   **`ruff`** - Code linting and formatting
 
-## Installation
+## Installation & Quick Start
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-repo/standup.git
-    cd standup
-    ```
+The easiest way to run `standup` is directly from the git repository using `uvx` (in an empty directory):
 
-2.  **Set up dependencies using `uv`:**
-    ```bash
-    uv sync
-    ```
+```bash
+uvx https://github.com/BambusControl/standup.git
+```
+
+On first run, a default `standup_config.yml` file will be automatically created with sensible defaults. You can then edit it to customize your preferences.
+
+### Advanced Setup
+
+For development or customization:
+
+```bash
+# Install dependencies
+uv sync
+
+# Run the application
+uv run standup
+```
 
 ## Usage
 
-### Using Configuration File (Recommended)
+### Running the Monitor
 
-Create a `standup-config.yml` file in the project root:
+**Recommended method** (run directly from git):
+```bash
+uvx --from ./ standup
+```
+
+**Using local installation:**
+```bash
+uv run standup
+```
+
+### Configuration
+
+The application will automatically create a `standup_config.yml` file on first run with these defaults:
 
 ```yaml
-work_time_minutes: 60
-break_time_minutes: 2
+work_time_minutes: 50
+break_time_minutes: 3
 activation_threshold_seconds: 10
-csv_file: logs/activity_log.csv
-state_file: state/last_state.json
+csv_file: standup_activity_log.csv
+state_file: standup_last_state.json
 test_mode: false
 ```
 
-Then start the monitor:
+Edit this file to customize your preferences.
+
+### Custom Configuration File
+
+Use a custom config file path:
 
 ```bash
-uv run standup start
+uvx --from ./ standup --config-file path/to/config.yml
 ```
 
-Use a custom config file:
-
-```bash
-uv run standup start --config-file path/to/config.yml
-```
+### Command-Line Options
 
 View all available options:
 
 ```bash
-uv run standup start --help
+uvx --from ./ standup --help
 ```
-
-Run in test mode:
-
-```bash
-uv run standup start --test
-```
-
-## Development
-
-This project uses modern Python development practices:
-
-- **`uv`** for dependency management and virtual environments
-- **`ruff`** for linting and code formatting
-- **Modular architecture** for maintainability and testing
-- **Type hints** throughout for better code clarity
-- **Comprehensive documentation** with docstrings
-
-## Contributing
-
-Contributions are welcome! The modular architecture makes it easy to:
-- Add new activity tracking features
-- Implement additional notification methods
-- Extend data analysis capabilities
-- Improve the CLI interface
-
-Please ensure code follows the established patterns and includes appropriate documentation.

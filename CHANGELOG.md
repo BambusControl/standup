@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2025-10-22
+
+### Added
+- Automatic default configuration file creation when `standup_config.yml` is not found
+- `DEFAULT_CONFIG_TEMPLATE` with comprehensive comments and sensible defaults
+
+### Changed
+- CLI entry point renamed from `start` to `cli` in `cli.py` (with `start` alias for backwards compatibility)
+- Configuration loader now creates default config instead of failing when file is missing
+- Primary execution method is now `uvx --from ./ standup` for running directly from git
+
+### Fixed
+- `ImportError` when running `uvx --from ./ standup` due to missing `cli` function
+- First-run experience now seamless - no manual config file creation required
+
 ## [0.4.0] - 2025-10-22
 
 ### Added
