@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [NEXT RELEASE] - Unreleased
 
+### Changed
+- Refactored entire codebase to class-based architecture with dependency injection
+- Converted `activity_tracker.py` to `ActivityTracker` class
+- Converted `config_loader.py` to `ConfigLoader` class
+- Converted `state_handlers.py` to `StateHandler` class
+- Converted `thread_manager.py` to `ThreadManager` class
+- Converted `app.py` to `App` class with comprehensive lifecycle management
+- Split `utils.py` into focused classes: `Notifier`, `SessionLogger`, `StatePersistence`
+- Split `models.py` into `model/` submodule with separate files:
+  - `activity_type.py`: Activity type definitions and constants
+  - `state.py`: State enum and conversion logic
+  - `app_config.py`: Configuration NamedTuple
+  - `app_state.py`: Runtime state NamedTuple
+- Cleared `model/__init__.py`: All imports now use explicit full paths
+- Moved `COLLECTION_INTERVAL_SECONDS` from `constants.py` into `app.py`
+- Updated `__main__.py` to call `cli()` directly
+- Removed backwards compatibility `start` alias from `cli.py`
+
+### Fixed
+- Fixed shutdown/resume bug where active time wasn't properly simulated during laptop sleep
+
+### Removed
+- Deleted `constants.py` file (constant moved to usage location)
+- Removed wrapper functions in favor of direct class usage
+
 ## [0.4.1] - 2025-10-22
 
 ### Added
