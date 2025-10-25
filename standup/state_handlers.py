@@ -44,7 +44,9 @@ class StateHandler:
         current_monotonic = time.monotonic()
         time_since_last_activity = self._calculate_time_since_activity()
 
-        max_inter_event_gap = config.activation_threshold_sec / self.ACTIVATION_GAP_DIVISOR
+        max_inter_event_gap = (
+            config.activation_threshold_sec / self.ACTIVATION_GAP_DIVISOR
+        )
         if (
             time_since_last_activity >= config.break_duration_sec
             or time_since_last_activity >= max_inter_event_gap
@@ -209,19 +211,3 @@ class StateHandler:
         )
         logger.info("Break reminder triggered.")
         return app_state._replace(break_reminder_shown=True)
-
-
-def handle_active_state(
-    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
-) -> AppState:
-    """Handle ACTIVE state: check for IDLE transition and break reminders."""
-    handler = StateHandler(activity_tracker)
-    return handler.handle_active_state(app_state, config)
-
-
-def handle_idle_state(
-    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
-) -> AppState:
-    """Handle IDLE state: check for ACTIVE transition with sustained activity."""
-    handler = StateHandler(activity_tracker)
-    return handler.handle_idle_state(app_state, config)

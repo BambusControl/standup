@@ -124,9 +124,3 @@ test_mode: false
             test_mode=bool(test_mode),
             activation_threshold_sec=int(activation_threshold),
         )
-
-
-def load_config_from_file(config_path: Path | None = None) -> AppConfig:
-    """Load and parse YAML config; create default if missing."""
-    loader = ConfigLoader()
-    return loader.load(config_path)

@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 
 from .app import run_app
-from .config_loader import load_config_from_file
+from .config_loader import ConfigLoader
 
 
 @click.command()
@@ -18,8 +18,8 @@ def cli(config_file: Path | None):
     """Start the activity monitor."""
     _setup_logging()
 
-    # Load configuration from file (or use defaults if file doesn't exist)
-    config = load_config_from_file(config_file)
+    config_loader = ConfigLoader()
+    config = config_loader.load(config_file)
 
     click.echo("Starting the activity monitor...")
     run_app(config)

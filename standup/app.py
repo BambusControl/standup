@@ -11,7 +11,7 @@ from pynput import keyboard, mouse
 from .activity_tracker import ActivityTracker
 from .constants import COLLECTION_INTERVAL_SECONDS
 from .models import AppConfig, AppState, State, state_to_activity
-from .state_handlers import handle_active_state, handle_idle_state
+from .state_handlers import StateHandler
 from .thread_manager import cleanup_threads, start_all_threads
 from .utils import log_to_csv, save_runtime_state, load_runtime_state
 
@@ -28,6 +28,7 @@ DEFAULT_ENCODING = "utf-8"
 def run_app(config: AppConfig):
     """Main entry point: initialize components and run the state machine."""
     activity_tracker = ActivityTracker()
+    state_handler = StateHandler(activity_tracker)
     app_state = _initialize_app_state()
     # Try to load previously saved runtime state and resume from it
     resumed_from_saved_state = False
@@ -172,9 +173,9 @@ def run_app(config: AppConfig):
 
     # The main loop modifies the app state, so we need to update it before shutdown
     if config.test_mode:
-        app_state = _run_main_test_loop(app_state, config, activity_tracker)
+        app_state = _run_main_test_loop(app_state, config, state_handler)
     else:
-        app_state = _run_main_loop(app_state, config, activity_tracker)
+        app_state = _run_main_loop(app_state, config, state_handler)
 
     _cleanup_and_shutdown(app_state, config, all_threads, activity_tracker)
 
@@ -228,12 +229,12 @@ def _create_state_machine_listeners(activity_tracker: ActivityTracker) -> list:
 
 
 def _run_main_loop(
-    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
+    app_state: AppState, config: AppConfig, state_handler: StateHandler
 ) -> AppState:
     """Run main state machine loop until interrupted."""
     try:
         while True:
-            app_state = _process_current_state(app_state, config, activity_tracker)
+            app_state = _process_current_state(app_state, config, state_handler)
             time.sleep(COLLECTION_INTERVAL_SECONDS)
     except KeyboardInterrupt:
         logger.info("--- KeyboardInterrupt detected. Quitting ---")
@@ -242,13 +243,13 @@ def _run_main_loop(
 
 
 def _run_main_test_loop(
-    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
+    app_state: AppState, config: AppConfig, state_handler: StateHandler
 ) -> AppState:
     """Run state machine loop for limited test duration."""
     start_time = time.time()
 
     while not _should_exit_test_mode(start_time):
-        app_state = _process_current_state(app_state, config, activity_tracker)
+        app_state = _process_current_state(app_state, config, state_handler)
         time.sleep(COLLECTION_INTERVAL_SECONDS)
     return app_state
 
@@ -268,13 +269,13 @@ def _should_exit_test_mode(start_time: float) -> bool:
 
 
 def _process_current_state(
-    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
+    app_state: AppState, config: AppConfig, state_handler: StateHandler
 ) -> AppState:
     """Process current state and return updated state."""
     if app_state.current_state == State.ACTIVE:
-        return handle_active_state(app_state, config, activity_tracker)
+        return state_handler.handle_active_state(app_state, config)
     elif app_state.current_state == State.IDLE:
-        return handle_idle_state(app_state, config, activity_tracker)
+        return state_handler.handle_idle_state(app_state, config)
 
     return app_state
 
