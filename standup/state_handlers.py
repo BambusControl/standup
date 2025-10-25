@@ -4,7 +4,9 @@ import math
 
 from .activity_tracker import ActivityTracker
 from .models import AppConfig, AppState, State, state_to_activity
-from .utils import format_duration, log_to_csv, show_notification
+from .notifier import Notifier
+from .session_logger import SessionLogger
+from .utils import format_duration
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +18,16 @@ class StateHandler:
     SLEEP_DETECTION_THRESHOLD_SECONDS = 60
     ACTIVATION_GAP_DIVISOR = 10
 
-    def __init__(self, activity_tracker: ActivityTracker):
-        """Initialize with activity tracker instance."""
+    def __init__(
+        self,
+        activity_tracker: ActivityTracker,
+        session_logger: SessionLogger,
+        notifier: Notifier,
+    ):
+        """Initialize with activity tracker, session logger, and notifier instances."""
         self._activity_tracker = activity_tracker
+        self._session_logger = session_logger
+        self._notifier = notifier
 
     def handle_active_state(self, app_state: AppState, config: AppConfig) -> AppState:
         """Handle ACTIVE state: check for IDLE transition and break reminders."""
@@ -142,7 +151,7 @@ class StateHandler:
         )
 
         if self._should_log_session(session_duration):
-            log_to_csv(
+            self._session_logger.log(
                 config,
                 state_to_activity(app_state.current_state),
                 app_state.session_start_time,
@@ -172,13 +181,13 @@ class StateHandler:
         )
 
         if self._should_log_session(break_duration):
-            show_notification(
+            self._notifier.show(
                 "Welcome Back!",
                 f"Your break lasted {format_duration(break_duration)}.",
                 "Starting new session.",
             )
 
-            log_to_csv(
+            self._session_logger.log(
                 config,
                 state_to_activity(app_state.current_state),
                 app_state.session_start_time,
@@ -204,7 +213,7 @@ class StateHandler:
         pushups_per_second = pushups_per_minute / 60
         pushups_to_do = math.ceil(session_duration_seconds * pushups_per_second)
 
-        show_notification(
+        self._notifier.show(
             "Time for a break!",
             f"You've been active for {format_duration(session_duration_seconds)}.",
             f"Now your goal is to do {pushups_to_do} pushups!",

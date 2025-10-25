@@ -11,9 +11,12 @@ from pynput import keyboard, mouse
 from .activity_tracker import ActivityTracker
 from .constants import COLLECTION_INTERVAL_SECONDS
 from .models import AppConfig, AppState, State, state_to_activity
+from .notifier import Notifier
+from .session_logger import SessionLogger
 from .state_handlers import StateHandler
+from .state_persistence import StatePersistence
 from .thread_manager import cleanup_threads, start_all_threads
-from .utils import log_to_csv, save_runtime_state, load_runtime_state
+from .utils import format_duration
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
@@ -28,12 +31,15 @@ DEFAULT_ENCODING = "utf-8"
 def run_app(config: AppConfig):
     """Main entry point: initialize components and run the state machine."""
     activity_tracker = ActivityTracker()
-    state_handler = StateHandler(activity_tracker)
+    session_logger = SessionLogger()
+    notifier = Notifier()
+    state_handler = StateHandler(activity_tracker, session_logger, notifier)
+    state_persistence = StatePersistence()
     app_state = _initialize_app_state()
     # Try to load previously saved runtime state and resume from it
     resumed_from_saved_state = False
     try:
-        saved = load_runtime_state(config)
+        saved = state_persistence.load(config)
         if saved:
             # Map the saved state into a new AppState, keeping monotonic timestamps fresh
             saved_state_name = saved.get("current_state")
@@ -72,7 +78,7 @@ def run_app(config: AppConfig):
                         active_session_end,
                         active_session_duration,
                     )
-                    log_to_csv(
+                    session_logger.log(
                         config,
                         state_to_activity(State.ACTIVE),
                         saved_session_start,
@@ -84,9 +90,7 @@ def run_app(config: AppConfig):
                 break_duration = current_time - active_session_end
 
                 # Show welcome back notification with actual break duration
-                from .utils import show_notification, format_duration
-
-                show_notification(
+                notifier.show(
                     "Welcome Back!",
                     f"Your break lasted {format_duration(break_duration)}.",
                     "Starting new session.",
@@ -137,7 +141,7 @@ def run_app(config: AppConfig):
     def _save_state_and_exit(signum=None, frame=None):
         logger.info("Received signal %s - saving runtime state and exiting", signum)
         try:
-            save_runtime_state(
+            state_persistence.save(
                 config, app_state, activity_tracker.get_last_activity_time()
             )
         except Exception:
@@ -163,7 +167,7 @@ def run_app(config: AppConfig):
     # Also register an atexit handler to persist state on normal exit
     def _on_exit():
         try:
-            save_runtime_state(
+            state_persistence.save(
                 config, app_state, activity_tracker.get_last_activity_time()
             )
         except Exception:
@@ -177,7 +181,9 @@ def run_app(config: AppConfig):
     else:
         app_state = _run_main_loop(app_state, config, state_handler)
 
-    _cleanup_and_shutdown(app_state, config, all_threads, activity_tracker)
+    _cleanup_and_shutdown(
+        app_state, config, all_threads, activity_tracker, state_persistence, session_logger
+    )
 
 
 def _initialize_app_state() -> AppState:
@@ -285,14 +291,18 @@ def _cleanup_and_shutdown(
     config: AppConfig,
     all_threads: list,
     activity_tracker: ActivityTracker,
+    state_persistence: StatePersistence,
+    session_logger: SessionLogger,
 ):
     """Cleanup and graceful shutdown of all components."""
     logger.info("Shutting down. Saving final session.")
 
-    _log_final_session(app_state, config)
+    _log_final_session(app_state, config, session_logger)
     # Persist the runtime state so next startup can resume accurately
     try:
-        save_runtime_state(config, app_state, activity_tracker.get_last_activity_time())
+        state_persistence.save(
+            config, app_state, activity_tracker.get_last_activity_time()
+        )
     except Exception:
         logger.exception("Failed to save runtime state during cleanup")
     cleanup_threads(all_threads)
@@ -300,7 +310,9 @@ def _cleanup_and_shutdown(
     logger.info("Listeners stopped. Exiting.")
 
 
-def _log_final_session(app_state: AppState, config: AppConfig):
+def _log_final_session(
+    app_state: AppState, config: AppConfig, session_logger: SessionLogger
+):
     """Log final session if duration meets minimum threshold."""
     final_time = time.time()
     # Prefer monotonic-based duration to avoid issues from clock adjustments
@@ -310,7 +322,7 @@ def _log_final_session(app_state: AppState, config: AppConfig):
         session_duration = final_time - app_state.session_start_time
 
     if session_duration > MINIMUM_SESSION_DURATION_SECONDS:
-        log_to_csv(
+        session_logger.log(
             config,
             state_to_activity(app_state.current_state),
             app_state.session_start_time,
