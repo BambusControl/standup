@@ -8,7 +8,7 @@ import sys
 
 from pynput import keyboard, mouse
 
-from .activity_tracker import on_activity, set_last_activity_time
+from .activity_tracker import ActivityTracker
 from .constants import COLLECTION_INTERVAL_SECONDS
 from .models import AppConfig, AppState, State, state_to_activity
 from .state_handlers import handle_active_state, handle_idle_state
@@ -27,6 +27,7 @@ DEFAULT_ENCODING = "utf-8"
 
 def run_app(config: AppConfig):
     """Main entry point: initialize components and run the state machine."""
+    activity_tracker = ActivityTracker()
     app_state = _initialize_app_state()
     # Try to load previously saved runtime state and resume from it
     resumed_from_saved_state = False
@@ -99,7 +100,9 @@ def run_app(config: AppConfig):
                     break_reminder_shown=False,
                 )
                 # Set last activity to the saved value, not current time
-                set_last_activity_time(saved_last_activity, current_monotonic)
+                activity_tracker.set_last_activity_time(
+                    saved_last_activity, current_monotonic
+                )
             else:
                 # Normal resume: no state transition needed
                 app_state = app_state._replace(
@@ -110,7 +113,7 @@ def run_app(config: AppConfig):
                     break_reminder_shown=saved_break_reminder,
                 )
                 # Set last activity time to current time for seamless continuation
-                set_last_activity_time(current_time, current_monotonic)
+                activity_tracker.set_last_activity_time(current_time, current_monotonic)
 
             resumed_from_saved_state = True
             logger.info("Resumed state from saved runtime state: %s", saved)
@@ -119,23 +122,23 @@ def run_app(config: AppConfig):
 
     # Only set initial activity timestamp if we're starting fresh (not resuming)
     if not resumed_from_saved_state:
-        set_last_activity_time(
+        activity_tracker.set_last_activity_time(
             app_state.session_start_time, app_state.session_start_monotonic
         )
 
     config = _configure_for_test_mode(config)
     logger.info("--- Activity Monitor Started (Config: %s) ---", config)
 
-    all_threads = _setup_monitoring_system(config)
+    all_threads = _setup_monitoring_system(config, activity_tracker)
     start_all_threads(all_threads)
 
     # Register signal handlers to save state on termination
     def _save_state_and_exit(signum=None, frame=None):
         logger.info("Received signal %s - saving runtime state and exiting", signum)
         try:
-            from .activity_tracker import get_last_activity_time
-
-            save_runtime_state(config, app_state, get_last_activity_time())
+            save_runtime_state(
+                config, app_state, activity_tracker.get_last_activity_time()
+            )
         except Exception:
             logger.exception("Failed to save runtime state in signal handler")
         try:
@@ -159,9 +162,9 @@ def run_app(config: AppConfig):
     # Also register an atexit handler to persist state on normal exit
     def _on_exit():
         try:
-            from .activity_tracker import get_last_activity_time
-
-            save_runtime_state(config, app_state, get_last_activity_time())
+            save_runtime_state(
+                config, app_state, activity_tracker.get_last_activity_time()
+            )
         except Exception:
             logger.exception("Failed to save runtime state in atexit handler")
 
@@ -169,11 +172,11 @@ def run_app(config: AppConfig):
 
     # The main loop modifies the app state, so we need to update it before shutdown
     if config.test_mode:
-        app_state = _run_main_test_loop(app_state, config)
+        app_state = _run_main_test_loop(app_state, config, activity_tracker)
     else:
-        app_state = _run_main_loop(app_state, config)
+        app_state = _run_main_loop(app_state, config, activity_tracker)
 
-    _cleanup_and_shutdown(app_state, config, all_threads)
+    _cleanup_and_shutdown(app_state, config, all_threads, activity_tracker)
 
 
 def _initialize_app_state() -> AppState:
@@ -197,12 +200,14 @@ def _configure_for_test_mode(config: AppConfig) -> AppConfig:
     return config._replace(csv_file=test_csv_file)
 
 
-def _setup_monitoring_system(config: AppConfig) -> list:
+def _setup_monitoring_system(
+    config: AppConfig, activity_tracker: ActivityTracker
+) -> list:
     """Create and return all monitoring threads and listeners."""
     all_threads = []
 
     # Create state machine listeners
-    state_machine_listeners = _create_state_machine_listeners()
+    state_machine_listeners = _create_state_machine_listeners(activity_tracker)
     all_threads.extend(state_machine_listeners)
 
     # No window monitoring system (removed)
@@ -210,21 +215,25 @@ def _setup_monitoring_system(config: AppConfig) -> list:
     return all_threads
 
 
-def _create_state_machine_listeners() -> list:
+def _create_state_machine_listeners(activity_tracker: ActivityTracker) -> list:
     """Create mouse and keyboard input listeners."""
     mouse_listener = mouse.Listener(
-        on_move=on_activity, on_click=on_activity, on_scroll=on_activity
+        on_move=activity_tracker.on_activity,
+        on_click=activity_tracker.on_activity,
+        on_scroll=activity_tracker.on_activity,
     )
-    keyboard_listener = keyboard.Listener(on_press=on_activity)
+    keyboard_listener = keyboard.Listener(on_press=activity_tracker.on_activity)
 
     return [mouse_listener, keyboard_listener]
 
 
-def _run_main_loop(app_state: AppState, config: AppConfig) -> AppState:
+def _run_main_loop(
+    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
+) -> AppState:
     """Run main state machine loop until interrupted."""
     try:
         while True:
-            app_state = _process_current_state(app_state, config)
+            app_state = _process_current_state(app_state, config, activity_tracker)
             time.sleep(COLLECTION_INTERVAL_SECONDS)
     except KeyboardInterrupt:
         logger.info("--- KeyboardInterrupt detected. Quitting ---")
@@ -232,12 +241,14 @@ def _run_main_loop(app_state: AppState, config: AppConfig) -> AppState:
         return app_state
 
 
-def _run_main_test_loop(app_state: AppState, config: AppConfig) -> AppState:
+def _run_main_test_loop(
+    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
+) -> AppState:
     """Run state machine loop for limited test duration."""
     start_time = time.time()
 
     while not _should_exit_test_mode(start_time):
-        app_state = _process_current_state(app_state, config)
+        app_state = _process_current_state(app_state, config, activity_tracker)
         time.sleep(COLLECTION_INTERVAL_SECONDS)
     return app_state
 
@@ -256,26 +267,31 @@ def _should_exit_test_mode(start_time: float) -> bool:
     return False
 
 
-def _process_current_state(app_state: AppState, config: AppConfig) -> AppState:
+def _process_current_state(
+    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
+) -> AppState:
     """Process current state and return updated state."""
     if app_state.current_state == State.ACTIVE:
-        return handle_active_state(app_state, config)
+        return handle_active_state(app_state, config, activity_tracker)
     elif app_state.current_state == State.IDLE:
-        return handle_idle_state(app_state, config)
+        return handle_idle_state(app_state, config, activity_tracker)
 
     return app_state
 
 
-def _cleanup_and_shutdown(app_state: AppState, config: AppConfig, all_threads: list):
+def _cleanup_and_shutdown(
+    app_state: AppState,
+    config: AppConfig,
+    all_threads: list,
+    activity_tracker: ActivityTracker,
+):
     """Cleanup and graceful shutdown of all components."""
     logger.info("Shutting down. Saving final session.")
 
     _log_final_session(app_state, config)
     # Persist the runtime state so next startup can resume accurately
     try:
-        from .activity_tracker import get_last_activity_time
-
-        save_runtime_state(config, app_state, get_last_activity_time())
+        save_runtime_state(config, app_state, activity_tracker.get_last_activity_time())
     except Exception:
         logger.exception("Failed to save runtime state during cleanup")
     cleanup_threads(all_threads)

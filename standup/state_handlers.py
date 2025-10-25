@@ -4,7 +4,7 @@ import logging
 import time
 import math
 
-from .activity_tracker import get_last_activity_time, get_last_activity_monotonic
+from .activity_tracker import ActivityTracker
 from .models import AppConfig, AppState, State, state_to_activity
 from .utils import format_duration, log_to_csv, show_notification
 
@@ -19,13 +19,13 @@ SLEEP_DETECTION_THRESHOLD_SECONDS = 60
 ACTIVATION_GAP_DIVISOR = 10
 
 
-def _calculate_time_since_activity() -> float:
+def _calculate_time_since_activity(activity_tracker: ActivityTracker) -> float:
     """Calculate seconds elapsed since last user activity."""
     now_wall = time.time()
     now_mono = time.monotonic()
     try:
-        last_wall = get_last_activity_time()
-        last_mono = get_last_activity_monotonic()
+        last_wall = activity_tracker.get_last_activity_time()
+        last_mono = activity_tracker.get_last_activity_monotonic()
         delta_wall = now_wall - last_wall
         delta_mono = now_mono - last_mono
         # If wall-clock shows a much larger gap than monotonic, assume
@@ -34,14 +34,16 @@ def _calculate_time_since_activity() -> float:
             return delta_wall
         return delta_mono
     except Exception:
-        return now_wall - get_last_activity_time()
+        return now_wall - activity_tracker.get_last_activity_time()
 
 
-def handle_active_state(app_state: AppState, config: AppConfig) -> AppState:
+def handle_active_state(
+    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
+) -> AppState:
     """Handle ACTIVE state: check for IDLE transition and break reminders."""
     current_time = time.time()
     current_monotonic = time.monotonic()
-    time_since_last_activity = _calculate_time_since_activity()
+    time_since_last_activity = _calculate_time_since_activity(activity_tracker)
 
     # Check for transition: ACTIVE -> IDLE
     if _should_transition_to_idle(time_since_last_activity, config):
@@ -56,11 +58,13 @@ def handle_active_state(app_state: AppState, config: AppConfig) -> AppState:
     return app_state  # No state change
 
 
-def handle_idle_state(app_state: AppState, config: AppConfig) -> AppState:
+def handle_idle_state(
+    app_state: AppState, config: AppConfig, activity_tracker: ActivityTracker
+) -> AppState:
     """Handle IDLE state: check for ACTIVE transition with sustained activity."""
     current_time = time.time()
     current_monotonic = time.monotonic()
-    time_since_last_activity = _calculate_time_since_activity()
+    time_since_last_activity = _calculate_time_since_activity(activity_tracker)
 
     # Stay idle if user is still inactive. Also reset candidate if events are too sparse
     # to count as sustained activity. For example, for a 10s activation threshold,
