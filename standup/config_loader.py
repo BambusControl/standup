@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
 import yaml
 
 from .models import AppConfig
@@ -52,7 +51,7 @@ test_mode: false
 """
 
 
-def load_config_from_file(config_path: Optional[Path] = None) -> AppConfig:
+def load_config_from_file(config_path: Path | None = None) -> AppConfig:
     """Load and parse YAML config; create default if missing."""
     if config_path is None:
         config_path = Path(DEFAULT_CONFIG_FILE)

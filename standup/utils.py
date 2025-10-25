@@ -10,7 +10,6 @@ from typing import cast
 from windows_toasts import Toast, ToastDuration, WindowsToaster
 
 from .models import ActivityType, AppConfig
-from typing import Optional
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
@@ -123,7 +122,7 @@ def _should_log_session(duration: float) -> bool:
     return duration > MINIMUM_SESSION_DURATION_SECONDS
 
 
-def _get_state_file_path(config: Optional[AppConfig]) -> Path:
+def _get_state_file_path(config: AppConfig | None) -> Path:
     """Get state file path from config or raise if missing."""
     if not config:
         raise ValueError("Configuration is required to determine state file path")
@@ -132,9 +131,7 @@ def _get_state_file_path(config: Optional[AppConfig]) -> Path:
     return config.state_file
 
 
-def save_runtime_state(
-    config: Optional[AppConfig], app_state, last_activity_time: float
-):
+def save_runtime_state(config: AppConfig | None, app_state, last_activity_time: float):
     """Save runtime state to disk for session resumption after restart."""
     state_file = _get_state_file_path(config)
     state = {
@@ -154,7 +151,7 @@ def save_runtime_state(
         logger.error("Failed to save runtime state", exc_info=e)
 
 
-def load_runtime_state(config: Optional[AppConfig]):
+def load_runtime_state(config: AppConfig | None):
     """Load previously saved runtime state from disk or return None."""
     state_file = _get_state_file_path(config)
     if not state_file.exists():
@@ -168,7 +165,7 @@ def load_runtime_state(config: Optional[AppConfig]):
         return None
 
 
-def clear_runtime_state(config: Optional[AppConfig]):
+def clear_runtime_state(config: AppConfig | None):
     """Remove saved runtime state file if present."""
     state_file = _get_state_file_path(config)
     try:
