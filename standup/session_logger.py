@@ -2,7 +2,7 @@ import csv
 import logging
 from datetime import datetime
 
-from .models import ActivityType, AppConfig
+from .model import ActivityType, AppConfig
 from .utils import format_duration
 
 logger = logging.getLogger(__name__)

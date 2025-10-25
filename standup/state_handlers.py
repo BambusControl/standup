@@ -3,7 +3,7 @@ import time
 import math
 
 from .activity_tracker import ActivityTracker
-from .models import AppConfig, AppState, State, state_to_activity
+from .model import AppConfig, AppState, State, state_to_activity
 from .notifier import Notifier
 from .session_logger import SessionLogger
 from .utils import format_duration

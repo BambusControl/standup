@@ -10,12 +10,12 @@ from pynput import keyboard, mouse
 
 from .activity_tracker import ActivityTracker
 from .constants import COLLECTION_INTERVAL_SECONDS
-from .models import AppConfig, AppState, State, state_to_activity
+from .model import AppConfig, AppState, State, state_to_activity
 from .notifier import Notifier
 from .session_logger import SessionLogger
 from .state_handlers import StateHandler
 from .state_persistence import StatePersistence
-from .thread_manager import cleanup_threads, start_all_threads
+from .thread_manager import ThreadManager
 from .utils import format_duration
 
 # Set up module-level logger
@@ -35,6 +35,7 @@ def run_app(config: AppConfig):
     notifier = Notifier()
     state_handler = StateHandler(activity_tracker, session_logger, notifier)
     state_persistence = StatePersistence()
+    thread_manager = ThreadManager()
     app_state = _initialize_app_state()
     # Try to load previously saved runtime state and resume from it
     resumed_from_saved_state = False
@@ -135,7 +136,7 @@ def run_app(config: AppConfig):
     logger.info("--- Activity Monitor Started (Config: %s) ---", config)
 
     all_threads = _setup_monitoring_system(config, activity_tracker)
-    start_all_threads(all_threads)
+    thread_manager.start_all(all_threads)
 
     # Register signal handlers to save state on termination
     def _save_state_and_exit(signum=None, frame=None):
@@ -182,7 +183,13 @@ def run_app(config: AppConfig):
         app_state = _run_main_loop(app_state, config, state_handler)
 
     _cleanup_and_shutdown(
-        app_state, config, all_threads, activity_tracker, state_persistence, session_logger
+        app_state,
+        config,
+        all_threads,
+        activity_tracker,
+        state_persistence,
+        session_logger,
+        thread_manager,
     )
 
 
@@ -293,6 +300,7 @@ def _cleanup_and_shutdown(
     activity_tracker: ActivityTracker,
     state_persistence: StatePersistence,
     session_logger: SessionLogger,
+    thread_manager: ThreadManager,
 ):
     """Cleanup and graceful shutdown of all components."""
     logger.info("Shutting down. Saving final session.")
@@ -305,7 +313,7 @@ def _cleanup_and_shutdown(
         )
     except Exception:
         logger.exception("Failed to save runtime state during cleanup")
-    cleanup_threads(all_threads)
+    thread_manager.cleanup(all_threads)
 
     logger.info("Listeners stopped. Exiting.")
 
