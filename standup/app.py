@@ -44,19 +44,74 @@ def run_app(config: AppConfig):
                 saved.get("session_start_time", app_state.session_start_time)
             )
             saved_break_reminder = bool(saved.get("break_reminder_shown", False))
+            saved_last_activity = float(saved.get("last_activity_time", time.time()))
 
-            app_state = app_state._replace(
-                current_state=saved_state,
-                session_start_time=saved_session_start,
-                session_start_monotonic=time.monotonic(),
-                activation_candidate_start_monotonic=None,
-                break_reminder_shown=saved_break_reminder,
-            )
-            # When resuming, set last_activity_time to NOW so the app continues
-            # seamlessly in the restored state without immediate transitions
             current_time = time.time()
             current_monotonic = time.monotonic()
-            set_last_activity_time(current_time, current_monotonic)
+
+            # Simulate missing time: check if inactivity threshold was exceeded during downtime
+            time_since_last_activity = current_time - saved_last_activity
+
+            # If we were ACTIVE and the downtime exceeded the inactivity threshold,
+            # we need to simulate the state transition that should have occurred
+            if (
+                saved_state == State.ACTIVE
+                and time_since_last_activity >= config.break_duration_sec
+            ):
+                # The active session should have ended at last_activity + inactivity_threshold
+                active_session_end = saved_last_activity + config.break_duration_sec
+                active_session_duration = active_session_end - saved_session_start
+
+                # Log the active session that ended during downtime
+                if active_session_duration > MINIMUM_SESSION_DURATION_SECONDS:
+                    logger.info(
+                        "Simulating missed ACTIVE->IDLE transition during downtime. "
+                        "Active session ended at %s (duration: %.1fs)",
+                        active_session_end,
+                        active_session_duration,
+                    )
+                    log_to_csv(
+                        config,
+                        state_to_activity(State.ACTIVE),
+                        saved_session_start,
+                        active_session_end,
+                        active_session_duration,
+                    )
+
+                # Now we've been in IDLE (break) since then
+                break_duration = current_time - active_session_end
+
+                # Show welcome back notification with actual break duration
+                from .utils import show_notification, format_duration
+
+                show_notification(
+                    "Welcome Back!",
+                    f"Your break lasted {format_duration(break_duration)}.",
+                    "Starting new session.",
+                )
+
+                # Start fresh in IDLE state with the corrected session start time
+                app_state = app_state._replace(
+                    current_state=State.IDLE,
+                    session_start_time=active_session_end,
+                    session_start_monotonic=current_monotonic,
+                    activation_candidate_start_monotonic=None,
+                    break_reminder_shown=False,
+                )
+                # Set last activity to the saved value, not current time
+                set_last_activity_time(saved_last_activity, current_monotonic)
+            else:
+                # Normal resume: no state transition needed
+                app_state = app_state._replace(
+                    current_state=saved_state,
+                    session_start_time=saved_session_start,
+                    session_start_monotonic=current_monotonic,
+                    activation_candidate_start_monotonic=None,
+                    break_reminder_shown=saved_break_reminder,
+                )
+                # Set last activity time to current time for seamless continuation
+                set_last_activity_time(current_time, current_monotonic)
+
             resumed_from_saved_state = True
             logger.info("Resumed state from saved runtime state: %s", saved)
     except Exception:
