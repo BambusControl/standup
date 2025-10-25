@@ -4,7 +4,7 @@ import click
 import logging
 from pathlib import Path
 
-from .app import run_app
+from .app import App
 from .config_loader import ConfigLoader
 
 
@@ -22,11 +22,8 @@ def cli(config_file: Path | None):
     config = config_loader.load(config_file)
 
     click.echo("Starting the activity monitor...")
-    run_app(config)
-
-
-# Alias for backwards compatibility with __main__.py
-start = cli
+    app = App(config)
+    app.run()
 
 
 def _setup_logging():

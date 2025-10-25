@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 
-from .model import AppConfig
+from .model.app_config import AppConfig
 
 logger = logging.getLogger(__name__)
 

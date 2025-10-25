@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 import yaml
 
-from .model import AppConfig
+from .model.app_config import AppConfig
 
 logger = logging.getLogger(__name__)
 
