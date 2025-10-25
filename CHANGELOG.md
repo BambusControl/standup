@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## [NEXT RELEASE] - Unreleased
+
 ## [0.4.1] - 2025-10-22
 
 ### Added
@@ -103,7 +105,7 @@ All notable changes to this project will be documented in this file.
 - Removed unused line from `pyproject.toml`.
 - Integrated `ruff` for code linting and formatting.
 
-## [Unreleased]
+## [NO-RELEASE] - Start of the project before the first released version
 
 ### Added
 - Created dedicated modules for better separation of concerns:
