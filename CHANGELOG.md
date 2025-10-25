@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [NEXT RELEASE] - Unreleased
 
+## [0.4.2] - 2025-10-25
+
 ### Changed
 - Refactored entire codebase to class-based architecture with dependency injection
 - Converted `activity_tracker.py` to `ActivityTracker` class
@@ -21,6 +23,10 @@ All notable changes to this project will be documented in this file.
 - Moved `COLLECTION_INTERVAL_SECONDS` from `constants.py` into `app.py`
 - Updated `__main__.py` to call `cli()` directly
 - Removed backwards compatibility `start` alias from `cli.py`
+
+### Added
+- Created `.github/copilot/instructions/python-standup.instructions.md` for AI coding guidelines
+- Enhanced `AGENTS.md` with comprehensive development patterns and anti-patterns
 
 ### Fixed
 - Fixed shutdown/resume bug where active time wasn't properly simulated during laptop sleep
