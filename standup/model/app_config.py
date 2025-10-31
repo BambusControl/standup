@@ -11,3 +11,4 @@ class AppConfig(NamedTuple):
     state_file: Path
     test_mode: bool
     activation_threshold_sec: int
+    break_messages: list[str]

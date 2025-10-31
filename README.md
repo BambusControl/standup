@@ -3,13 +3,6 @@
 A Python-based activity monitor for Windows that tracks keyboard and mouse input to distinguish between active work sessions and breaks.
 Features desktop notifications to remind you to take breaks after configurable periods of continuous work and comprehensive activity logging for detailed analysis.
 
-## Todo
-
-- [ ] Add customizable break reminder messages
-- [ ] Support multiple notification strategies (pushups, stretches, eye exercises, etc.)
-- [ ] Add daily/weekly activity summaries
-
-
 ## Features
 
 *   **Smart Activity Monitoring**: Tracks keyboard and mouse activity with intelligent state management

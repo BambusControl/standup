@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [NEXT RELEASE] - Unreleased
 
+## [0.4.3] - 2025-10-31
+
+### Added
+- Periodic state persistence during main loop to handle unexpected shutdowns (Windows shutdown, power loss)
+- Save interval synchronized with inactivity threshold (`break_duration_sec`) for consistent behavior
+- Customizable break notification messages via `break_messages` configuration option
+- Default set of 8 encouraging break messages for office work
+- Random message selection for each break notification
+- Auto-repair for incomplete config files: missing values filled with defaults and saved back to file
+
+### Changed
+- Application notification name changed from "Activity Monitor" to "Standup!"
+- Break reminder header now uses random custom message instead of static "Time for a break!"
+- `AppConfig` now includes `break_messages` field for notification customization
+- Config parser now fills missing values with defaults instead of throwing errors
+- Config file automatically updated with missing fields on load
+
+### Fixed
+- State file not saved during Windows shutdown or forced process termination
+
 ## [0.4.2] - 2025-10-25
 
 ### Changed

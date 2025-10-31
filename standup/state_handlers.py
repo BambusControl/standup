@@ -1,6 +1,7 @@
 import logging
 import time
 import math
+import random
 
 from .activity_tracker import ActivityTracker
 from .model.app_config import AppConfig
@@ -45,7 +46,9 @@ class StateHandler:
         if self._should_show_break_reminder(
             app_state, config, current_time, current_monotonic
         ):
-            return self._show_break_reminder(app_state, current_time, current_monotonic)
+            return self._show_break_reminder(
+                app_state, config, current_time, current_monotonic
+            )
 
         return app_state
 
@@ -205,9 +208,13 @@ class StateHandler:
         )
 
     def _show_break_reminder(
-        self, app_state: AppState, current_time: float, current_monotonic: float
+        self,
+        app_state: AppState,
+        config: AppConfig,
+        current_time: float,
+        current_monotonic: float,
     ) -> AppState:
-        """Show gamified break notification with pushup challenge."""
+        """Show gamified break notification with random custom message."""
         session_duration_seconds = self._calculate_session_duration(
             app_state, current_time, current_monotonic
         )
@@ -215,8 +222,11 @@ class StateHandler:
         pushups_per_second = pushups_per_minute / 60
         pushups_to_do = math.ceil(session_duration_seconds * pushups_per_second)
 
+        # Select a random message from config
+        break_message = random.choice(config.break_messages)
+
         self._notifier.show(
-            "Time for a break!",
+            break_message,
             f"You've been active for {format_duration(session_duration_seconds)}.",
             f"Now your goal is to do {pushups_to_do} pushups!",
         )
