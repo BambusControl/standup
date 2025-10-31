@@ -85,13 +85,10 @@ break_messages:
                 config_data = yaml.safe_load(f)
 
             if not config_data:
-                raise ValueError(
-                    f"Configuration file '{config_path}' is empty. "
-                    f"Please provide required configuration values."
-                )
+                config_data = {}
 
             logger.info("Loaded configuration from '%s'", config_path)
-            return self._parse_config_data(config_data)
+            return self._parse_config_data(config_data, config_path)
 
         except yaml.YAMLError as e:
             logger.error("Failed to parse configuration file: %s", e)
@@ -112,23 +109,50 @@ break_messages:
             logger.error("Failed to create default configuration file: %s", e)
             raise
 
-    def _parse_config_data(self, config_data: dict) -> AppConfig:
-        """Parse config dict and validate required fields."""
+    def _parse_config_data(self, config_data: dict, config_path: Path) -> AppConfig:
+        """Parse config dict, fill missing values with defaults, and update file."""
+        # Track if we need to update the file
+        updated = False
+
+        # Fill in missing values with defaults
         if "work_time_minutes" not in config_data:
-            raise ValueError("Configuration must specify 'work_time_minutes'")
+            config_data["work_time_minutes"] = self.DEFAULT_WORK_TIME_MINUTES
+            updated = True
+            logger.warning(
+                "Missing 'work_time_minutes' in config, using default: %s",
+                self.DEFAULT_WORK_TIME_MINUTES,
+            )
+
         if "break_time_minutes" not in config_data:
-            raise ValueError("Configuration must specify 'break_time_minutes'")
+            config_data["break_time_minutes"] = self.DEFAULT_BREAK_TIME_MINUTES
+            updated = True
+            logger.warning(
+                "Missing 'break_time_minutes' in config, using default: %s",
+                self.DEFAULT_BREAK_TIME_MINUTES,
+            )
+
         if "csv_file" not in config_data:
-            raise ValueError("Configuration must specify 'csv_file' path")
+            config_data["csv_file"] = self.DEFAULT_CSV_FILE
+            updated = True
+            logger.warning(
+                "Missing 'csv_file' in config, using default: %s",
+                self.DEFAULT_CSV_FILE,
+            )
+
         if "state_file" not in config_data:
-            raise ValueError("Configuration must specify 'state_file' path")
+            config_data["state_file"] = self.DEFAULT_STATE_FILE
+            updated = True
+            logger.warning(
+                "Missing 'state_file' in config, using default: %s",
+                self.DEFAULT_STATE_FILE,
+            )
 
         work_time_minutes = config_data["work_time_minutes"]
         break_time_minutes = config_data["break_time_minutes"]
         csv_file_path = config_data["csv_file"]
         state_file_path = config_data["state_file"]
 
-        test_mode = config_data.get("test_mode", False)
+        test_mode = config_data.get("test_mode", self.DEFAULT_TEST_MODE)
         activation_threshold = config_data.get(
             "activation_threshold_seconds", self.DEFAULT_ACTIVATION_THRESHOLD_SECONDS
         )
@@ -137,6 +161,24 @@ break_messages:
         # Ensure break_messages is a list
         if not isinstance(break_messages, list) or not break_messages:
             break_messages = self.DEFAULT_BREAK_MESSAGES
+            config_data["break_messages"] = self.DEFAULT_BREAK_MESSAGES
+            updated = True
+            logger.warning("Invalid 'break_messages' in config, using defaults")
+
+        # Write updated config back to file if any values were added
+        if updated:
+            try:
+                with config_path.open("w", encoding="utf-8") as f:
+                    yaml.dump(
+                        config_data,
+                        f,
+                        default_flow_style=False,
+                        allow_unicode=True,
+                        sort_keys=False,
+                    )
+                logger.info("Updated configuration file with missing default values")
+            except Exception as e:
+                logger.error("Failed to update configuration file: %s", e)
 
         csv_path = Path(csv_file_path)
         csv_path.parent.mkdir(parents=True, exist_ok=True)

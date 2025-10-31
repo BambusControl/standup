@@ -10,11 +10,14 @@ All notable changes to this project will be documented in this file.
 - Customizable break notification messages via `break_messages` configuration option
 - Default set of 8 encouraging break messages for office work
 - Random message selection for each break notification
+- Auto-repair for incomplete config files: missing values filled with defaults and saved back to file
 
 ### Changed
 - Application notification name changed from "Activity Monitor" to "Standup!"
 - Break reminder header now uses random custom message instead of static "Time for a break!"
 - `AppConfig` now includes `break_messages` field for notification customization
+- Config parser now fills missing values with defaults instead of throwing errors
+- Config file automatically updated with missing fields on load
 
 ### Fixed
 - State file not saved during Windows shutdown or forced process termination
