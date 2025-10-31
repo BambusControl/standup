@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class Notifier:
     """Windows toast notification display."""
 
-    APP_NAME = "Activity Monitor"
+    APP_NAME = "Standup!"
 
     def show(self, header: str, line1: str, line2: str = ""):
         """Display Windows toast notification with header and message lines."""
