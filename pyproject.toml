@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "standup"
-version = "0.4.1"
+version = "0.4.3"
 description = "A Python-based activity monitor for Windows that tracks keyboard and mouse input to distinguish between active work sessions and breaks."
 readme = "README.md"
 requires-python = ">=3.12"

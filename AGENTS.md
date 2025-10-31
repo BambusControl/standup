@@ -69,3 +69,40 @@ This project uses `uv` for dependency management:
 - ✅ Constants defined at module level where used
 - ✅ Test after each logical change
 - ✅ Commit frequently with descriptive messages
+
+## Release Procedure
+
+### Pre-Release Checklist (on `develop` branch)
+1. **Test the application**: Run `uv run standup --test` and verify all features work
+2. **Update CHANGELOG.md**:
+   - Change `[NEXT RELEASE] - Unreleased` to `[X.Y.Z] - YYYY-MM-DD`
+   - Add new `[NEXT RELEASE] - Unreleased` section at the top
+   - Ensure all changes are documented under appropriate sections (Added/Changed/Fixed/Removed)
+3. **Update pyproject.toml**: Set `version = "X.Y.Z"` to match the release version
+4. **Update README.md**: Only if user-facing changes require documentation updates
+5. **Commit**: `git commit -m "Prepare release X.Y.Z"`
+6. **Push to remote**: `git push origin develop`
+
+### GitHub PR Workflow
+1. **Create Pull Request**: GitHub automatically creates PR from `develop` to `main`
+2. **PR Description**: Use CHANGELOG content for the version (concise summary of changes)
+3. **Review and Merge**: Review changes, then merge PR to `main`
+
+### Post-Merge Tagging
+1. **Switch to main**: `git checkout main && git pull origin main`
+2. **Create tag**: `git tag -a X.Y.Z -m "Release X.Y.Z"`
+3. **Push tag**: `git push origin X.Y.Z`
+
+### GitHub Release Creation
+1. **Navigate to**: GitHub repository > Releases > Draft a new release
+2. **Select tag**: Choose the newly pushed tag (X.Y.Z)
+3. **Release title**: `Version X.Y.Z`
+4. **Release notes**:
+   - Short user-focused summary of what changed (from CHANGELOG)
+   - Max 1-2 lines about code changes, only if significant architectural changes
+5. **Publish release**
+
+### Post-Release
+1. **Switch back to develop**: `git checkout develop`
+2. **Merge main back**: `git merge main` (to keep branches in sync)
+3. **Push develop**: `git push origin develop`
