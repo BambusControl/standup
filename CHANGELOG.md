@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [NEXT RELEASE] - Unreleased
 
+### Added
+- Periodic state persistence during main loop to handle unexpected shutdowns (Windows shutdown, power loss)
+- Save interval synchronized with inactivity threshold (`break_duration_sec`) for consistent behavior
+
+### Fixed
+- State file not saved during Windows shutdown or forced process termination
+
 ## [0.4.2] - 2025-10-25
 
 ### Changed

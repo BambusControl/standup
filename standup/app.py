@@ -42,6 +42,7 @@ class App:
         self.thread_manager = ThreadManager()
         self.app_state = self._initialize_app_state()
         self.all_threads = []
+        self.last_save_time = time.time()
 
     def run(self):
         """Main entry point: initialize components and run the state machine."""
@@ -219,6 +220,7 @@ class App:
         try:
             while True:
                 self._process_current_state()
+                self._periodic_state_save()
                 time.sleep(COLLECTION_INTERVAL_SECONDS)
         except KeyboardInterrupt:
             logger.info("--- KeyboardInterrupt detected. Quitting ---")
@@ -247,6 +249,20 @@ class App:
             self.app_state = self.state_handler.handle_idle_state(
                 self.app_state, self.config
             )
+
+    def _periodic_state_save(self):
+        """Periodically save state to disk to handle unexpected shutdowns."""
+        current_time = time.time()
+        if current_time - self.last_save_time >= self.config.break_duration_sec:
+            try:
+                self.state_persistence.save(
+                    self.config,
+                    self.app_state,
+                    self.activity_tracker.get_last_activity_time(),
+                )
+                self.last_save_time = current_time
+            except Exception:
+                logger.exception("Failed to save runtime state during periodic save")
 
     def _cleanup_and_shutdown(self):
         """Cleanup and graceful shutdown of all components."""
