@@ -85,7 +85,20 @@ This project uses `uv` for dependency management:
 
 ### GitHub PR Workflow
 1. **Create Pull Request**: GitHub automatically creates PR from `develop` to `main`
-2. **PR Description**: Use CHANGELOG content for the version (concise summary of changes)
+2. **PR Description**: Use CHANGELOG content for the version (concise summary of changes) wrapped in markdown code block:
+   ```md
+   ## Release X.Y.Z
+   
+   ### Added
+   - Feature 1
+   - Feature 2
+   
+   ### Changed
+   - Change 1
+   
+   ### Fixed
+   - Fix 1
+   ```
 3. **Review and Merge**: Review changes, then merge PR to `main`
 
 ### Post-Merge Tagging
@@ -97,12 +110,22 @@ This project uses `uv` for dependency management:
 1. **Navigate to**: GitHub repository > Releases > Draft a new release
 2. **Select tag**: Choose the newly pushed tag (X.Y.Z)
 3. **Release title**: `Version X.Y.Z`
-4. **Release notes**:
-   - Short user-focused summary of what changed (from CHANGELOG)
-   - Max 1-2 lines about code changes, only if significant architectural changes
+4. **Release notes**: Short user-focused summary wrapped in markdown code block:
+   ```md
+   ### What's New
+   
+   **Feature Headline** 🎯
+   - User-facing benefit 1
+   - User-facing benefit 2
+   
+   **Another Feature** ✨
+   - Benefit description
+   
+   *Code: Brief note about significant architectural changes (1-2 lines max, only if relevant)*
+   ```
 5. **Publish release**
 
 ### Post-Release
 1. **Switch back to develop**: `git checkout develop`
-2. **Merge main back**: `git merge main` (to keep branches in sync)
+2. **Fast-forward merge main**: `git merge --ff-only main` (to keep branches in sync)
 3. **Push develop**: `git push origin develop`
